@@ -1,15 +1,9 @@
 ---
 title: Ontwerp
 description: Netwerktekening, VLAN-indeling en resourceverdeling.
-draft: true
 sidebar:
   order: 3
 ---
-
-:::caution[Concept]
-Deze pagina is een voorstel en staat op `draft: true`. Controleer en herschrijf hem
-op basis van wat je werkelijk bouwt, en haal dan de regel `draft: true` weg.
-:::
 
 ## Netwerktekening
 
