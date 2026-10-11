@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.astro/
+
+# Nooit publiceren: geheimen en sleutels
+.env
+.env.*
+*.key
+*.pem
+*.pfx
+*vault*
+secrets/
