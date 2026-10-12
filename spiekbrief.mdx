@@ -1,0 +1,233 @@
+---
+title: Spiekbrief Markdown
+description: Hoe je pagina's opmaakt. Alleen lokaal zichtbaar, wordt nooit gepubliceerd.
+draft: true
+---
+
+import VlanTabel from '../../components/VlanTabel.astro';
+
+Deze pagina staat op `draft: true` en is alleen te zien met `npm run dev`, op
+`http://localhost:4321/spiekbrief/`. Per onderdeel zie je eerst wat je typt, en daaronder hoe het eruitziet.
+
+## Bovenkant van elk bestand
+
+Elk bestand begint met een blok tussen twee regels `---`. Dat is geen tekst die op de pagina komt,
+maar instellingen voor de pagina.
+
+```md
+---
+title: Bouwlog fase 1: netwerk
+description: Eén zin die in Google en in LinkedIn-voorbeelden verschijnt.
+draft: true
+sidebar:
+  order: 5.1
+---
+```
+
+- `title` wordt de grote kop bovenaan. Zet die dus niet nog eens in de tekst.
+- `draft: true` houdt de pagina offline. Haal de regel weg om te publiceren.
+- `sidebar: order:` bepaalt de plek in de zijbalk.
+
+## Koppen
+
+```md
+## Kop van een onderdeel
+### Kop daaronder
+```
+
+Begin altijd bij `##`: de `#` is de paginatitel en die komt al uit `title`. Elke `##` en `###`
+verschijnt ook in "Op deze pagina" rechts.
+
+### Kop daaronder
+
+Zo ziet een `###` eruit.
+
+## Gewone tekst en witregels
+
+```md
+Dit is een alinea. Een enkele Enter
+wordt genegeerd, dit staat nog op dezelfde regel.
+
+Na een lege regel begint een nieuwe alinea.
+```
+
+Dit is een alinea. Een enkele Enter
+wordt genegeerd, dit staat nog op dezelfde regel.
+
+Na een lege regel begint een nieuwe alinea.
+
+## Vet, cursief en code in de tekst
+
+```md
+Dit is **vet**, dit is *cursief* en dit is een `commando` of `bestandsnaam`.
+```
+
+Dit is **vet**, dit is *cursief* en dit is een `commando` of `bestandsnaam`.
+
+## Lijsten
+
+```md
+- Punt
+- Nog een punt
+  - Ingesprongen punt (twee spaties ervoor)
+
+1. Eerste stap
+2. Tweede stap
+3. Derde stap
+```
+
+- Punt
+- Nog een punt
+  - Ingesprongen punt (twee spaties ervoor)
+
+1. Eerste stap
+2. Tweede stap
+3. Derde stap
+
+## Links
+
+```md
+Naar een pagina in je eigen site: [de casus](/verbeek-logistiek/casus/)
+
+Naar een andere site: [OPNsense-documentatie](https://docs.opnsense.org/)
+```
+
+Naar een pagina in je eigen site: [de casus](/verbeek-logistiek/casus/)
+
+Naar een andere site: [OPNsense-documentatie](https://docs.opnsense.org/)
+
+Interne links beginnen met `/` en eindigen met `/`. Het adres is het pad van het bestand onder
+`src/content/docs/`, zonder `.md`.
+
+## Afbeeldingen
+
+```md
+![Wat er op de afbeelding te zien is](../../../assets/verbeek-logistiek/opnsense-vlans.png)
+```
+
+Hetzelfde als een link, met een `!` ervoor. Het pad gaat vanaf het bestand waarin je schrijft naar
+`src/assets/`. Elke `../` is één map omhoog: vanuit `src/content/docs/verbeek-logistiek/` zijn dat er drie.
+
+## Codeblokken
+
+Voor commando's en uitvoer. Zet drie backticks (de toets links van de 1) erboven en eronder, met
+de taal erachter voor kleuren.
+
+````md
+```powershell
+Get-NetAdapter | Select-Object Name, Status
+```
+
+```txt
+vEOS#show vlan
+VLAN  Name         Status    Ports
+----- ------------ --------- -------
+10    management   active    Et1
+20    servers      active    Et2
+```
+````
+
+```powershell
+Get-NetAdapter | Select-Object Name, Status
+```
+
+```txt
+vEOS#show vlan
+VLAN  Name         Status    Ports
+----- ------------ --------- -------
+10    management   active    Et1
+20    servers      active    Et2
+```
+
+Talen die je vaak nodig hebt: `powershell`, `bash`, `yaml` (Ansible), `hcl` (Packer), `txt` (uitvoer zonder kleur).
+
+## Tabellen
+
+```md
+| VM       | RAM  | Altijd aan |
+|----------|------|------------|
+| OPNsense | 1 GB | Ja         |
+| DC01     | 2 GB | Ja         |
+```
+
+| VM       | RAM  | Altijd aan |
+|----------|------|------------|
+| OPNsense | 1 GB | Ja         |
+| DC01     | 2 GB | Ja         |
+
+De streepjes en spaties hoeven niet netjes uitgelijnd te zijn, dat is alleen voor je eigen leesgemak.
+
+## Opvallende blokken
+
+```md
+:::note
+Een opmerking terzijde.
+:::
+
+:::tip
+Iets wat de lezer tijd bespaart.
+:::
+
+:::caution[Let op]
+Iets wat makkelijk misgaat. Tussen de blokhaken zet je een eigen titel.
+:::
+
+:::danger
+Iets wat schade kan doen, zoals gegevens kwijtraken.
+:::
+```
+
+:::note
+Een opmerking terzijde.
+:::
+
+:::tip
+Iets wat de lezer tijd bespaart.
+:::
+
+:::caution[Let op]
+Iets wat makkelijk misgaat. Tussen de blokhaken zet je een eigen titel.
+:::
+
+:::danger
+Iets wat schade kan doen, zoals gegevens kwijtraken.
+:::
+
+## Diagrammen
+
+````md
+```mermaid
+flowchart LR
+  Client --> Switch --> Firewall --> Internet
+```
+````
+
+```mermaid
+flowchart LR
+  Client --> Switch --> Firewall --> Internet
+```
+
+Mermaid tekent het diagram voor je uit tekst. `LR` is van links naar rechts, `TB` van boven naar beneden.
+
+## Gegevens uit lab.ts
+
+Dit werkt alleen in bestanden die op `.mdx` eindigen, niet in `.md`. Bovenaan, onder het blok met
+`---`, haal je het onderdeel op, en daarna zet je het waar je wilt:
+
+```mdx
+import VlanTabel from '../../../components/VlanTabel.astro';
+
+<VlanTabel />
+```
+
+<VlanTabel />
+
+Beschikbaar: `VlanTabel`, `MachineTabel` en `GeheugenBalk`. Ze lezen uit `src/data/lab.ts`, dus wat je
+daar aanpast, verandert overal tegelijk.
+
+## Wat mis kan gaan
+
+- **Lijst of tabel plakt aan de tekst erboven.** Zet er een lege regel tussen.
+- **Tekst verschijnt als code.** Je regel begint met vier spaties of een tab. Haal die weg.
+- **Kapotte afbeelding of build-fout.** Het pad klopt niet, of de hoofdletters wijken af van de bestandsnaam.
+- **Rare tekens in `.mdx`.** In `.mdx` betekenen `<` en `{` iets. Wil je ze als tekst, zet ze tussen backticks.

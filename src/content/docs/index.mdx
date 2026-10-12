@@ -2,29 +2,8 @@
 title: Projecten
 description: Infrastructuurprojecten van Sam Slaats, met ontwerpkeuzes, bouwstappen en storingen.
 template: splash
-hero:
-  tagline: Hier documenteer ik mijn infrastructuurprojecten. Niet de klikpaden, maar de keuzes, wat er stukging en hoe ik het herstelde.
-  actions:
-    - text: Bekijk het VMware-lab
-      link: /verbeek-logistiek/
-      icon: right-arrow
-    - text: GitHub
-      link: https://github.com/SamSlaats
-      icon: external
-      variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import Statusbord from '../../components/Statusbord.astro';
 
-## Projecten
-
-<CardGrid>
-  <Card title="Verbeek Logistiek (VMware-lab)" icon="laptop">
-    Een gesegmenteerd netwerk met Active Directory, een gehoste webapplicatie,
-    back-up en monitoring voor een fictief bedrijf van 40 medewerkers.
-
-    **Status:** in opbouw, fase 1 (netwerk).
-
-    [Naar het project](/verbeek-logistiek/)
-  </Card>
-</CardGrid>
+<Statusbord />

@@ -1,0 +1,21 @@
+---
+import { vlans } from '../data/lab';
+---
+<div class="tabel not-content">
+  <table>
+    <thead>
+      <tr><th>VLAN</th><th>Naam</th><th>Subnet</th><th>Gateway</th><th>Doel</th></tr>
+    </thead>
+    <tbody>
+      {vlans.map((v) => (
+        <tr>
+          <th scope="row"><i class="vlan-blok" style={`--c: var(--vlan-${v.id})`}></i>{v.id}</th>
+          <td>{v.naam}</td>
+          <td class="cijfers">{v.subnet}</td>
+          <td class="cijfers">{v.gateway}</td>
+          <td>{v.doel}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

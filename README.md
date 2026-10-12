@@ -11,3 +11,11 @@ zichtbaar maar wordt niet gepubliceerd. Sjablonen staan in `sjablonen/`.
 
 Nieuwe bouwlogpagina: kopieer `sjablonen/bouwlog.md` naar
 `src/content/docs/verbeek-logistiek/bouwlog-fase-N-onderwerp.md`.
+
+## Cijfers van het lab
+
+VLAN's, machines, geheugen en de stand per fase staan in `src/data/lab.ts`. De startpagina
+en de pagina Ontwerp lezen daaruit, dus je past het op één plek aan. Zet `gebouwd: true`
+zodra een machine echt draait en werk `bijgewerkt` bij.
+
+Het uiterlijk staat in `src/styles/thema.css`.

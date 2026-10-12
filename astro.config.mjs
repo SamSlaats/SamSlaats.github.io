@@ -19,6 +19,12 @@ export default defineConfig({
         { icon: 'github', label: 'GitHub', href: 'https://github.com/SamSlaats' },
       ],
       lastUpdated: true,
+      // Eén donker thema: de keuze licht/donker van Starlight is uitgezet.
+      components: {
+        ThemeProvider: './src/components/ThemeProvider.astro',
+        ThemeSelect: './src/components/ThemeSelect.astro',
+      },
+      customCss: ['@fontsource-variable/archivo/wdth.css', './src/styles/thema.css'],
       sidebar: [
         { label: 'Start', link: '/' },
         {

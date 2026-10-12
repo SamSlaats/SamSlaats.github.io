@@ -1,0 +1,40 @@
+---
+title: Ontwerp
+description: Netwerktekening, VLAN-indeling en geheugenverdeling.
+draft: true
+sidebar:
+  order: 3
+---
+
+import VlanTabel from '../../../components/VlanTabel.astro';
+import MachineTabel from '../../../components/MachineTabel.astro';
+import GeheugenBalk from '../../../components/GeheugenBalk.astro';
+
+:::caution[Concept]
+Deze pagina is een voorstel en staat op `draft: true`. Controleer en herschrijf hem
+op basis van wat je werkelijk bouwt, en haal dan de regel `draft: true` weg.
+:::
+
+## Netwerktekening
+
+```mermaid
+flowchart TB
+  WAN([Internet / NAT]) --- FW[OPNsense<br/>firewall en router]
+  FW ===|trunk, getagd| SW[vEOS<br/>managed switch]
+  SW ---|access VLAN 10| MGMT[Management]
+  SW ---|access VLAN 20| SRV[Servers<br/>DC01, DC02, database, monitoring]
+  SW ---|access VLAN 30| CLI[Clients]
+  SW ---|access VLAN 40| DMZ[DMZ<br/>reverse proxy, webserver]
+```
+
+## VLAN-indeling
+
+<VlanTabel />
+
+## Machines
+
+<MachineTabel />
+
+## Geheugenverdeling
+
+<GeheugenBalk />

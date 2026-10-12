@@ -1,0 +1,38 @@
+---
+import { machines, hostRam } from '../data/lab';
+const altijd = machines.filter((m) => m.altijd).reduce((s, m) => s + m.ram, 0);
+const totaal = machines.reduce((s, m) => s + m.ram, 0);
+---
+<div class="geheugen not-content">
+  <div class="balk" role="img" aria-label={`${altijd} GB altijd in gebruik, ${totaal} GB als alles draait, van ${hostRam} GB`}>
+    {machines.map((m) => (
+      <span class={m.altijd ? '' : 'soms'} style={`flex: ${m.ram}; --c: var(--vlan-${m.vlan})`} title={`${m.naam}, ${m.ram} GB`}>
+        {m.ram > 1 && <em>{m.naam}</em>}
+      </span>
+    ))}
+    <span class="vrij" style={`flex: ${hostRam - totaal}`}><em>Windows en reserve</em></span>
+  </div>
+  <dl>
+    <div><dt>Altijd aan</dt><dd>{altijd} GB</dd></div>
+    <div><dt>Alles tegelijk</dt><dd>{totaal} GB</dd></div>
+    <div><dt>Host</dt><dd>{hostRam} GB</dd></div>
+  </dl>
+  <p class="uitleg">Gearceerd: draait alleen wanneer nodig. Kleur: het VLAN van de machine.</p>
+</div>
+
+<style>
+  .geheugen { container-type: inline-size; }
+  .balk { display: flex; height: 3.25rem; gap: 2px; }
+  .balk span { background: var(--c); min-width: 0; display: flex; align-items: center; overflow: hidden; }
+  .balk em { font-style: normal; font-stretch: 70%; font-weight: 600; font-size: 0.85rem; color: #0b1626; padding-left: 0.4rem; white-space: nowrap; }
+  .balk .soms { background: repeating-linear-gradient(135deg, var(--c) 0 6px, color-mix(in srgb, var(--c) 45%, var(--bord-bg)) 6px 12px); }
+  .balk .soms em { background: var(--c); margin-left: 0.35rem; padding: 0.15rem 0.4rem; }
+  .balk .vrij { background: var(--bord-vlak); outline: 1px dashed var(--bord-lijn); outline-offset: -1px; }
+  .balk .vrij em { color: var(--bord-zacht); font-weight: 400; }
+  dl { display: flex; gap: 2.5rem; margin: 1rem 0 0; flex-wrap: wrap; }
+  dt { color: var(--bord-zacht); font-stretch: 80%; font-size: 0.95rem; }
+  dd { margin: 0; font-size: 1.6rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; color: var(--bord-inkt); }
+  .uitleg { margin: 0.6rem 0 0; color: var(--bord-zacht); font-size: 0.9rem; }
+  /* te smal voor namen: de tabel Machines noemt ze, en elke blok heeft een tooltip */
+  @container (max-width: 52rem) { .balk em { display: none; } }
+</style>

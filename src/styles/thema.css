@@ -1,0 +1,74 @@
+/* Thema van de site: donker, compact, één lettertype (Archivo) in smalle en brede snit.
+   De VLAN-kleuren komen overal terug waar een machine of netwerk genoemd wordt. */
+:root {
+  --bord-bg: #0f1b2d;
+  --bord-vlak: #16263d;
+  --bord-hoog: #1e3350;
+  --bord-lijn: #2c4263;
+  --bord-inkt: #e8eef8;
+  --bord-zacht: #93a7c4;
+
+  --vlan-10: #f2c13d;
+  --vlan-20: #5b9bff;
+  --vlan-30: #4fd1a1;
+  --vlan-40: #ff8172;
+
+  --sl-font: 'Archivo Variable', sans-serif;
+  --sl-color-bg: var(--bord-bg);
+  --sl-color-black: var(--bord-bg);
+  --sl-color-bg-nav: #0c1626;
+  --sl-color-bg-sidebar: #0c1626;
+  --sl-color-text: #c3d0e4;
+  --sl-color-white: var(--bord-inkt);
+  --sl-color-gray-1: #dbe4f2;
+  --sl-color-gray-2: #b3c2d9;
+  --sl-color-gray-3: var(--bord-zacht);
+  --sl-color-gray-5: var(--bord-lijn);
+  --sl-color-gray-6: var(--bord-vlak);
+  --sl-color-gray-7: #132238;
+  --sl-color-accent: #2f6fdc;
+  --sl-color-text-accent: #8fbaff;
+  --sl-color-accent-low: var(--bord-hoog);
+  --sl-color-accent-high: #cfe0ff;
+  --sl-color-hairline: var(--bord-lijn);
+  --sl-color-hairline-light: #223655;
+  --sl-color-hairline-shade: #0a1220;
+  --sl-content-width: 54rem;
+  --sl-text-body: 1rem;
+  --sl-line-height: 1.6;
+  --sl-text-h1: 2.75rem;
+}
+
+:is(h1, h2, h3, h4) { font-stretch: 118%; font-weight: 700; letter-spacing: -0.015em; }
+.site-title { font-stretch: 118%; font-weight: 700; color: var(--bord-inkt); }
+
+/* Zijbalk */
+nav.sidebar a { font-stretch: 88%; }
+nav.sidebar a[aria-current='page'] { background: var(--bord-hoog); color: var(--bord-inkt); border-left: 4px solid var(--vlan-20); border-radius: 0; }
+
+/* Koppen en tabellen in gewone pagina's */
+.sl-markdown-content h2:not(:where(.not-content *)) { padding: 0.35rem 0.8rem; background: var(--bord-vlak); border-left: 4px solid var(--vlan-20); font-size: 1.35rem; }
+.sl-markdown-content table:not(:where(.not-content *)) { font-variant-numeric: tabular-nums; }
+.sl-markdown-content :is(th, td):not(:where(.not-content *)) { padding: 0.45rem 0.9rem; border-bottom: 1px solid var(--bord-lijn); }
+.sl-markdown-content thead th:not(:where(.not-content *)) { font-stretch: 80%; font-weight: 500; color: var(--bord-zacht); border-bottom-color: var(--bord-zacht); }
+.sl-markdown-content tbody tr:nth-child(2n):not(:where(.not-content *)) { background: var(--bord-vlak); }
+
+/* Tabellen uit src/components (MachineTabel, VlanTabel) */
+.tabel { overflow-x: auto; }
+.tabel table { width: 100%; min-width: 36rem; border-collapse: collapse; font-size: 0.98rem; }
+.tabel :is(th, td) { text-align: left; padding: 0.5rem 0.9rem 0.5rem 0; border-bottom: 1px solid var(--bord-lijn); white-space: nowrap; }
+.tabel thead th { font-weight: 500; font-stretch: 80%; color: var(--bord-zacht); border-bottom-color: var(--bord-zacht); }
+.tabel tbody th { font-weight: 600; color: var(--bord-inkt); }
+.tabel td { color: var(--bord-zacht); }
+.tabel .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabel :is(td.num, td.cijfers) { color: var(--bord-inkt); font-variant-numeric: tabular-nums; }
+.tabel td.ja { color: var(--vlan-30); font-weight: 600; }
+.vlan-blok { display: inline-block; width: 0.65rem; height: 0.65rem; margin-right: 0.55rem; background: var(--c); }
+
+/* Startpagina: het statusbord heeft zijn eigen kop en meer breedte */
+main:has(.statusbord) { --sl-content-width: 72rem; }
+main:has(.statusbord) .content-panel:has(> .sl-container > h1#_top) { display: none; }
+main:has(.statusbord) .content-panel { border-top: 0; }
+
+/* Het streepje naast het GitHub-icoon scheidde de themakeuze af, en die is er niet meer */
+.social-icons::after { display: none; }
