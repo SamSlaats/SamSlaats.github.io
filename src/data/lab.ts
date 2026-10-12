@@ -1,7 +1,7 @@
 // Eén bron voor de cijfers van het lab. De startpagina en de pagina Ontwerp lezen hieruit.
 // Pas dit bestand aan als er iets verandert, en zet dan ook `bijgewerkt` op vandaag.
 
-export const bijgewerkt = '2026-10-11';
+export const bijgewerkt = '2026-10-12';
 
 /** Geheugen van de pc waarop het lab draait, in GB. */
 export const hostRam = 32;
