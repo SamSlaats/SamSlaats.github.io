@@ -30,8 +30,8 @@ export const machines = [
 // status: 'klaar', 'bezig' of 'gepland'
 // href: vul het adres van de bouwlogpagina in zodra die gepubliceerd is, bijv. '/verbeek-logistiek/bouwlog-fase-1-netwerk/'
 export const fases: { nr: number; titel: string; status: 'klaar' | 'bezig' | 'gepland'; href?: string }[] = [
-  { nr: 1, titel: 'Netwerk', status: 'klaar' },
-  { nr: 2, titel: 'Identiteit', status: 'bezig' },
+  { nr: 1, titel: 'Netwerk', status: 'bezig' },
+  { nr: 2, titel: 'Identiteit', status: 'klaar' },
   { nr: 3, titel: 'Applicatie', status: 'gepland' },
   { nr: 4, titel: 'Back-up', status: 'gepland' },
   { nr: 5, titel: 'Monitoring', status: 'gepland' },
