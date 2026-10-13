@@ -5,13 +5,14 @@ const vlanNaam = (id: number) => vlans.find((v) => v.id === id)?.naam ?? '';
 <div class="tabel not-content">
   <table>
     <thead>
-      <tr><th>Naam</th><th>Rol</th><th>Netwerk</th><th class="num">Geheugen</th><th>Draait</th><th>Status</th></tr>
+      <tr><th>Naam</th><th>Rol</th><th>Besturingssysteem</th><th>Netwerk</th><th class="num">Geheugen</th><th>Draait</th><th>Status</th></tr>
     </thead>
     <tbody>
       {machines.map((m) => (
         <tr>
           <th scope="row">{m.naam}</th>
           <td>{m.rol}</td>
+          <td>{m.os || '–'}</td>
           <td><i class="vlan-blok" style={`--c: var(--vlan-${m.vlan})`}></i>VLAN {m.vlan} {vlanNaam(m.vlan)}</td>
           <td class="num">{m.ram} GB</td>
           <td>{m.altijd ? 'Altijd' : 'Alleen bij gebruik'}</td>

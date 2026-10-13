@@ -1,5 +1,6 @@
 ---
-// Startpagina: de stand van het lab in één oogopslag. Alle cijfers komen uit src/data/lab.ts.
+// De stand van het lab in één oogopslag. Alle cijfers komen uit src/data/lab.ts.
+// Staat op de projectpagina van Verbeek Logistiek, onder de paginatitel.
 import { fases, onderdelen, bijgewerkt } from '../data/lab';
 import GeheugenBalk from './GeheugenBalk.astro';
 import MachineTabel from './MachineTabel.astro';
@@ -8,16 +9,7 @@ const huidige = fases.find((f) => f.status === 'bezig');
 const datum = new Date(bijgewerkt).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
 ---
 <div class="statusbord not-content">
-  <header>
-    <div>
-      <h1>Verbeek Logistiek</h1>
-      <p class="lead">
-        De IT-omgeving van een verzonnen bedrijf met 40 medewerkers, ontworpen en gebouwd
-        in VMware Workstation. <a href="/verbeek-logistiek/">Lees het project</a>
-      </p>
-    </div>
-    {huidige && <p class="nu">Fase {huidige.nr} van {fases.length}<strong>{huidige.titel}</strong></p>}
-  </header>
+  {huidige && <p class="nu">Nu bezig: fase {huidige.nr} van {fases.length}<strong>{huidige.titel}</strong></p>}
 
   <ol class="fases">
     {fases.map((f) => (
@@ -50,14 +42,10 @@ const datum = new Date(bijgewerkt).toLocaleDateString('nl-NL', { day: 'numeric',
 
 <style>
   .statusbord { color: var(--bord-inkt); padding-block: 1rem 2rem; }
-  header { display: flex; justify-content: space-between; align-items: end; gap: 2rem; flex-wrap: wrap; }
-  h1 { margin: 0; font-stretch: 125%; font-weight: 700; font-size: clamp(2rem, 5.5vw, 4.25rem); line-height: 0.95; letter-spacing: -0.02em; color: var(--bord-inkt); }
-  .lead { margin: 0.9rem 0 0; color: var(--bord-zacht); max-width: 50ch; font-size: 1.05rem; line-height: 1.5; }
-  .lead a { color: var(--sl-color-text-accent); text-underline-offset: 3px; white-space: nowrap; }
-  .nu { margin: 0; text-align: right; color: var(--bord-zacht); font-stretch: 80%; font-size: 1.05rem; }
+  .nu { margin: 0; color: var(--bord-zacht); font-stretch: 80%; font-size: 1.05rem; }
   .nu strong { display: block; font-stretch: 100%; font-size: 1.9rem; line-height: 1.1; color: var(--bord-inkt); font-weight: 600; }
 
-  .fases { list-style: none; margin: 2.25rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .fases { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
   .fases li { margin: 0; padding: 0.6rem 0.7rem 0.7rem; background: var(--bord-vlak); border-top: 4px solid var(--bord-lijn); display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
   .fases b { font-stretch: 125%; font-size: 1.4rem; line-height: 1; color: var(--bord-zacht); }
   .fases :is(span, a) { font-stretch: 78%; font-size: 0.98rem; color: var(--bord-zacht); overflow-wrap: anywhere; hyphens: auto; }
@@ -79,7 +67,6 @@ const datum = new Date(bijgewerkt).toLocaleDateString('nl-NL', { day: 'numeric',
 
   @media (max-width: 50rem) {
     .fases { grid-template-columns: repeat(4, 1fr); }
-    .nu { text-align: left; }
   }
   @media (max-width: 30rem) {
     .fases { grid-template-columns: repeat(3, 1fr); }

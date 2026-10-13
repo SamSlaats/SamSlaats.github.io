@@ -8,11 +8,13 @@ sidebar:
 
 ## Doel
 
-<!-- Wat moet aan het eind van deze fase aantoonbaar werken? -->
+Het doel van deze log is het aantonen van het inrichten van een netwerk doormiddel van VLAN tagging/trunking, managed switch en het gebruik maken van OPNsense.
 
 ## Wat ik gebouwd heb
 
-<!-- Kort, in stappen. Alleen de configuratie die ertoe doet, geen screenshot per klik. -->
+Binnen VMware ben je beperkt met het gebruiken van VLAN en een managed switch. Hiervoor zijn oplossingen. Voor een managed switch heb ik gebruik gemaakt van vEOS.
+Binnen VMware kan je gebruik maken van LAN segmenten. Deze kan je in principe inrichten als VLAN ID's.
+
 
 ## Bewijs
 

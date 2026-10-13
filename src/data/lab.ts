@@ -16,22 +16,22 @@ export const vlans = [
 // altijd: draait continu (true) of alleen wanneer nodig (false)
 // gebouwd: zet op true zodra de machine echt bestaat en werkt
 export const machines = [
-  { naam: 'OPNsense', rol: 'Firewall en router', vlan: 10, ram: 1, altijd: true, gebouwd: false },
-  { naam: 'vEOS', rol: 'Managed switch', vlan: 10, ram: 2, altijd: true, gebouwd: false },
-  { naam: 'DC01', rol: 'Domain controller', vlan: 20, ram: 2, altijd: true, gebouwd: false },
-  { naam: 'DC02', rol: 'Domain controller', vlan: 20, ram: 2, altijd: true, gebouwd: false },
-  { naam: 'Database', rol: 'Database van de applicatie', vlan: 20, ram: 4, altijd: true, gebouwd: false },
-  { naam: 'Monitoring', rol: 'Metingen en meldingen', vlan: 20, ram: 2, altijd: true, gebouwd: false },
-  { naam: 'Webserver', rol: 'Interne webapplicatie', vlan: 40, ram: 2, altijd: true, gebouwd: false },
-  { naam: 'Windows-client', rol: 'Testwerkplek', vlan: 30, ram: 4, altijd: false, gebouwd: false },
-  { naam: 'Back-upserver', rol: 'Back-up en restore', vlan: 20, ram: 4, altijd: false, gebouwd: false },
+  { naam: 'OPNsense', rol: 'Firewall en router', os: 'OPNsense', vlan: 10, ram: 1, altijd: true, gebouwd: false },
+  { naam: 'vEOS', rol: 'Managed switch', os: 'vEOS', vlan: 10, ram: 2, altijd: true, gebouwd: false },
+  { naam: 'DC01', rol: 'Domain controller', os: 'Windows server 2022', vlan: 20, ram: 2, altijd: true, gebouwd: false },
+  { naam: 'DC02', rol: 'Domain controller', os: 'Windows server 2022', vlan: 20, ram: 2, altijd: true, gebouwd: false },
+  { naam: 'Database', rol: 'Database van de applicatie', os: '', vlan: 20, ram: 4, altijd: true, gebouwd: false },
+  { naam: 'Monitoring', rol: 'Metingen en meldingen', os: '', vlan: 20, ram: 2, altijd: true, gebouwd: false },
+  { naam: 'Webserver', rol: 'Interne webapplicatie', os: '', vlan: 40, ram: 2, altijd: true, gebouwd: false },
+  { naam: 'Windows-client', rol: 'Testwerkplek', os: '', vlan: 30, ram: 4, altijd: false, gebouwd: false },
+  { naam: 'Back-upserver', rol: 'Back-up en restore', os: '', vlan: 20, ram: 4, altijd: false, gebouwd: false },
 ];
 
 // status: 'klaar', 'bezig' of 'gepland'
 // href: vul het adres van de bouwlogpagina in zodra die gepubliceerd is, bijv. '/verbeek-logistiek/bouwlog-fase-1-netwerk/'
 export const fases: { nr: number; titel: string; status: 'klaar' | 'bezig' | 'gepland'; href?: string }[] = [
   { nr: 1, titel: 'Netwerk', status: 'bezig' },
-  { nr: 2, titel: 'Identiteit', status: 'klaar' },
+  { nr: 2, titel: 'Identiteit', status: 'gepland' },
   { nr: 3, titel: 'Applicatie', status: 'gepland' },
   { nr: 4, titel: 'Back-up', status: 'gepland' },
   { nr: 5, titel: 'Monitoring', status: 'gepland' },

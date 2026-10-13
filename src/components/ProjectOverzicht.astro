@@ -1,0 +1,69 @@
+---
+// Startpagina: alle projecten naast elkaar. Inhoud komt uit src/data/projecten.ts.
+import { projecten } from '../data/projecten';
+---
+<div class="projecten not-content">
+  <header>
+    <h1>Projecten</h1>
+    <p class="lead">
+      Infrastructuur die ik ontwerp, bouw en test. Per project laat ik de keuzes zien,
+      het bewijs dat het werkt, en wat er onderweg misging.
+    </p>
+  </header>
+
+  <ul class="lijst">
+    {projecten.map((p) => (
+      <li class={p.status === 'Afgerond' ? 'afgerond' : 'bezig'}>
+        <a href={p.href} class="kaart">
+          <p class="meta">
+            <span class="status">{p.status}</span>
+            <span>{p.herkomst}</span>
+            <span>{p.periode}</span>
+          </p>
+          <h2>{p.titel}</h2>
+          <p class="samenvatting">{p.samenvatting}</p>
+          <dl>
+            {p.cijfers.map((c) => (
+              <div><dt>{c.label}</dt><dd>{c.waarde}</dd></div>
+            ))}
+          </dl>
+          <ul class="techniek" aria-label="Gebruikte techniek">
+            {p.techniek.map((t) => <li>{t}</li>)}
+          </ul>
+          <span class="verder">Bekijk het project</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  .projecten { color: var(--bord-inkt); padding-block: 1rem 2rem; }
+  h1 { margin: 0; font-stretch: 125%; font-weight: 700; font-size: clamp(2.25rem, 6vw, 4.25rem); line-height: 0.95; letter-spacing: -0.02em; color: var(--bord-inkt); }
+  .lead { margin: 1rem 0 0; color: var(--bord-zacht); max-width: 52ch; font-size: 1.1rem; line-height: 1.55; }
+
+  .lijst { list-style: none; margin: 2.75rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: 1rem; }
+  .lijst > li { margin: 0; }
+  .kaart { display: flex; flex-direction: column; height: 100%; padding: 1.4rem 1.5rem 1.5rem; background: var(--bord-vlak); border-top: 4px solid var(--bord-lijn); color: var(--bord-inkt); text-decoration: none; }
+  .afgerond .kaart { border-top-color: var(--vlan-30); }
+  .bezig .kaart { border-top-color: var(--vlan-20); }
+  .kaart:hover { background: var(--bord-hoog); }
+  .kaart:hover .verder { text-decoration: underline; text-underline-offset: 4px; }
+  .kaart:focus-visible { outline: 2px solid var(--vlan-20); outline-offset: 2px; }
+
+  .meta { margin: 0; display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; font-stretch: 85%; font-size: 0.92rem; color: var(--bord-zacht); }
+  .status { font-weight: 600; color: var(--bord-inkt); }
+  .afgerond .status { color: var(--vlan-30); }
+  .bezig .status { color: var(--vlan-20); }
+  h2 { margin: 0.7rem 0 0; font-stretch: 118%; font-weight: 700; font-size: 1.75rem; line-height: 1.1; color: var(--bord-inkt); }
+  .samenvatting { margin: 0.7rem 0 0; color: var(--bord-zacht); line-height: 1.55; }
+
+  dl { display: flex; gap: 2rem; margin: 1.4rem 0 0; flex-wrap: wrap; }
+  dt { order: 2; color: var(--bord-zacht); font-stretch: 80%; font-size: 0.92rem; }
+  dl div { display: flex; flex-direction: column; }
+  dd { order: 1; margin: 0; font-size: 1.9rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+  .techniek { list-style: none; margin: 1.3rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .techniek li { margin: 0; padding: 0.2rem 0.55rem; border: 1px solid var(--bord-lijn); font-stretch: 85%; font-size: 0.88rem; color: var(--bord-zacht); }
+  .verder { margin-top: auto; padding-top: 1.4rem; font-weight: 600; color: var(--sl-color-text-accent); }
+</style>

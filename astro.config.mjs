@@ -28,6 +28,10 @@ export default defineConfig({
       sidebar: [
         { label: 'Start', link: '/' },
         {
+          label: 'Medica+ (enterprise wifi)',
+          items: [{ autogenerate: { directory: 'medica-plus' } }],
+        },
+        {
           label: 'Verbeek Logistiek (VMware-lab)',
           // Volgorde: per pagina via `sidebar: order:` bovenin het bestand.
           // Conceptpagina's (draft: true) verdwijnen vanzelf bij publicatie.

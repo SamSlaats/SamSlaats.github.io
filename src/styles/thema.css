@@ -65,10 +65,10 @@ nav.sidebar a[aria-current='page'] { background: var(--bord-hoog); color: var(--
 .tabel td.ja { color: var(--vlan-30); font-weight: 600; }
 .vlan-blok { display: inline-block; width: 0.65rem; height: 0.65rem; margin-right: 0.55rem; background: var(--c); }
 
-/* Startpagina: het statusbord heeft zijn eigen kop en meer breedte */
-main:has(.statusbord) { --sl-content-width: 72rem; }
-main:has(.statusbord) .content-panel:has(> .sl-container > h1#_top) { display: none; }
-main:has(.statusbord) .content-panel { border-top: 0; }
+/* Startpagina: het projectoverzicht heeft zijn eigen kop en meer breedte */
+main:has(.projecten) { --sl-content-width: 72rem; }
+main:has(.projecten) .content-panel:has(> .sl-container > h1#_top) { display: none; }
+main:has(.projecten) .content-panel { border-top: 0; }
 
 /* Het streepje naast het GitHub-icoon scheidde de themakeuze af, en die is er niet meer */
 .social-icons::after { display: none; }
