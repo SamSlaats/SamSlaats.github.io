@@ -1,69 +1,120 @@
 ---
-// Startpagina: alle projecten naast elkaar. Inhoud komt uit src/data/projecten.ts.
-import { projecten } from '../data/projecten';
+// Startpagina: eerst wie ik ben en waar ik mee werk, daaronder alle projecten in één lijst.
+// Inhoud komt uit src/data/projecten.ts. Een vakgebied verschijnt pas als er een project in zit,
+// en het filter pas als er projecten uit meer dan één vakgebied zijn.
+import { projecten, domeinen, type Domein } from '../data/projecten';
+
+const volgorde: Domein[] = ['infra', 'cloud', 'code'];
+const actief = volgorde.filter((d) => projecten.some((p) => p.domein === d));
+const techniek = (d: Domein) => [...new Set(projecten.filter((p) => p.domein === d).flatMap((p) => p.techniek))];
+const aantal = (d: Domein) => {
+  const n = projecten.filter((p) => p.domein === d).length;
+  return `${n} ${n === 1 ? 'project' : 'projecten'}`;
+};
+const metFilter = actief.length > 1;
 ---
 <div class="projecten not-content">
   <header>
-    <h1>Projecten</h1>
+    <h1>Sam Slaats</h1>
     <p class="lead">
-      Infrastructuur die ik ontwerp, bouw en test. Per project laat ik de keuzes zien,
-      het bewijs dat het werkt, en wat er onderweg misging.
+      Ik studeer infrastructuur aan het Summa College en bouw netwerken, servers en
+      Microsoft-omgevingen. Per project laat ik zien wat ik koos, wat ik bouwde en wat er misging.
     </p>
   </header>
 
-  <ul class="lijst">
-    {projecten.map((p) => (
-      <li class={p.status === 'Afgerond' ? 'afgerond' : 'bezig'}>
-        <a href={p.href} class="kaart">
-          <p class="meta">
-            <span class="status">{p.status}</span>
-            <span>{p.herkomst}</span>
-            <span>{p.periode}</span>
-          </p>
-          <h2>{p.titel}</h2>
-          <p class="samenvatting">{p.samenvatting}</p>
-          <dl>
-            {p.cijfers.map((c) => (
-              <div><dt>{c.label}</dt><dd>{c.waarde}</dd></div>
-            ))}
-          </dl>
-          <ul class="techniek" aria-label="Gebruikte techniek">
-            {p.techniek.map((t) => <li>{t}</li>)}
-          </ul>
-          <span class="verder">Bekijk het project</span>
-        </a>
+  <ul class="vakgebieden" aria-label="Vakgebieden">
+    {actief.map((d) => (
+      <li style={`--c: var(--dom-${d})`}>
+        {metFilter ? (
+          <button type="button" data-f={d} aria-pressed="false">
+            <span class="naam">{domeinen[d].naam}</span>
+            <span class="n">{aantal(d)}</span>
+            <span class="t">{techniek(d).join(', ')}</span>
+          </button>
+        ) : (
+          <div>
+            <span class="naam">{domeinen[d].naam}</span>
+            <span class="n">{aantal(d)}</span>
+            <span class="t">{techniek(d).join(', ')}</span>
+          </div>
+        )}
       </li>
     ))}
   </ul>
+
+  <section aria-labelledby="alle-projecten">
+    <div class="lijstkop">
+      <h2 id="alle-projecten">Projecten</h2>
+      {metFilter && (
+        <div class="filter" role="group" aria-label="Filter op vakgebied">
+          <button type="button" data-f="alle" aria-pressed="true">Alle</button>
+          {actief.map((d) => <button type="button" data-f={d} aria-pressed="false" style={`--c: var(--dom-${d})`}>{domeinen[d].kort}</button>)}
+        </div>
+      )}
+    </div>
+    <ol>
+      {projecten.map((p) => (
+        <li data-d={p.domein} style={`--c: var(--dom-${p.domein})`}>
+          <a href={p.href}>
+            <span class="titel">{p.titel}</span>
+            <span class="sam">{p.samenvatting}</span>
+            <span class="her">{p.herkomst}, {p.periode}</span>
+            <span class={p.status === 'Afgerond' ? 'st ok' : 'st nu'}>{p.status}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </section>
 </div>
 
+<script>
+  // Filter op vakgebied: via de knoppen boven de lijst of door op een vakgebied te klikken.
+  const knoppen = document.querySelectorAll<HTMLButtonElement>('.projecten button[data-f]');
+  const kies = (f: string) => {
+    knoppen.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.f === f)));
+    document.querySelectorAll<HTMLElement>('.projecten ol li').forEach((li) => {
+      li.hidden = f !== 'alle' && li.dataset.d !== f;
+    });
+  };
+  knoppen.forEach((b) => b.addEventListener('click', () => {
+    const f = b.dataset.f!;
+    // Nogmaals op een actief vakgebied klikken zet het filter weer op alles.
+    kies(b.getAttribute('aria-pressed') === 'true' && f !== 'alle' ? 'alle' : f);
+  }));
+</script>
+
 <style>
-  .projecten { color: var(--bord-inkt); padding-block: 1rem 2rem; }
+  .projecten { --dom-infra: var(--vlan-20); --dom-cloud: var(--vlan-10); --dom-code: var(--vlan-30); color: var(--bord-inkt); padding-block: 1rem 2rem; }
   h1 { margin: 0; font-stretch: 125%; font-weight: 700; font-size: clamp(2.25rem, 6vw, 4.25rem); line-height: 0.95; letter-spacing: -0.02em; color: var(--bord-inkt); }
-  .lead { margin: 1rem 0 0; color: var(--bord-zacht); max-width: 52ch; font-size: 1.1rem; line-height: 1.55; }
+  .lead { margin: 1rem 0 0; color: var(--bord-zacht); max-width: 56ch; font-size: 1.15rem; line-height: 1.55; }
 
-  .lijst { list-style: none; margin: 2.75rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: 1rem; }
-  .lijst > li { margin: 0; }
-  .kaart { display: flex; flex-direction: column; height: 100%; padding: 1.4rem 1.5rem 1.5rem; background: var(--bord-vlak); border-top: 4px solid var(--bord-lijn); color: var(--bord-inkt); text-decoration: none; }
-  .afgerond .kaart { border-top-color: var(--vlan-30); }
-  .bezig .kaart { border-top-color: var(--vlan-20); }
-  .kaart:hover { background: var(--bord-hoog); }
-  .kaart:hover .verder { text-decoration: underline; text-underline-offset: 4px; }
-  .kaart:focus-visible { outline: 2px solid var(--vlan-20); outline-offset: 2px; }
+  .vakgebieden { list-style: none; margin: 2.5rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 4px; }
+  .vakgebieden li { margin: 0; }
+  .vakgebieden :is(button, div) { all: unset; box-sizing: border-box; display: flex; flex-direction: column; width: 100%; height: 100%; padding: 1rem 1.1rem 1.2rem; background: var(--bord-vlak); border-top: 4px solid var(--c); }
+  .vakgebieden button { cursor: pointer; }
+  .vakgebieden button:hover, .vakgebieden button[aria-pressed='true'] { background: var(--bord-hoog); }
+  .vakgebieden button:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+  .naam { font-size: 1.15rem; font-stretch: 110%; font-weight: 700; color: var(--bord-inkt); }
+  .n { margin-top: 0.3rem; font-size: 1.6rem; font-weight: 600; color: var(--bord-inkt); }
+  .t { margin-top: 0.4rem; color: var(--bord-zacht); font-stretch: 85%; line-height: 1.5; }
 
-  .meta { margin: 0; display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; font-stretch: 85%; font-size: 0.92rem; color: var(--bord-zacht); }
-  .status { font-weight: 600; color: var(--bord-inkt); }
-  .afgerond .status { color: var(--vlan-30); }
-  .bezig .status { color: var(--vlan-20); }
-  h2 { margin: 0.7rem 0 0; font-stretch: 118%; font-weight: 700; font-size: 1.75rem; line-height: 1.1; color: var(--bord-inkt); }
-  .samenvatting { margin: 0.7rem 0 0; color: var(--bord-zacht); line-height: 1.55; }
+  section { margin-top: 2.75rem; }
+  .lijstkop { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  h2 { margin: 0; font-size: 1.3rem; font-stretch: 110%; font-weight: 700; color: var(--bord-inkt); }
+  .filter { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .filter button { all: unset; cursor: pointer; padding: 0.35rem 0.8rem; border: 1px solid var(--bord-lijn); color: var(--bord-zacht); font-weight: 600; font-stretch: 90%; }
+  .filter button[aria-pressed='true'] { background: var(--bord-hoog); color: var(--bord-inkt); border-color: var(--c, var(--bord-inkt)); }
+  .filter button:focus-visible { outline: 2px solid var(--vlan-20); }
 
-  dl { display: flex; gap: 2rem; margin: 1.4rem 0 0; flex-wrap: wrap; }
-  dt { order: 2; color: var(--bord-zacht); font-stretch: 80%; font-size: 0.92rem; }
-  dl div { display: flex; flex-direction: column; }
-  dd { order: 1; margin: 0; font-size: 1.9rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
-
-  .techniek { list-style: none; margin: 1.3rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
-  .techniek li { margin: 0; padding: 0.2rem 0.55rem; border: 1px solid var(--bord-lijn); font-stretch: 85%; font-size: 0.88rem; color: var(--bord-zacht); }
-  .verder { margin-top: auto; padding-top: 1.4rem; font-weight: 600; color: var(--sl-color-text-accent); }
+  ol { list-style: none; margin: 1rem 0 0; padding: 0; border-top: 1px solid var(--bord-lijn); }
+  ol li { margin: 0; border-bottom: 1px solid var(--bord-lijn); }
+  ol a { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'titel st' 'sam sam' 'her her'; gap: 0.25rem 1rem; padding: 1rem 0.9rem; border-left: 4px solid var(--c); color: var(--bord-inkt); text-decoration: none; }
+  ol a:hover { background: var(--bord-vlak); }
+  ol a:hover .titel { text-decoration: underline; text-underline-offset: 4px; }
+  .titel { grid-area: titel; font-weight: 700; font-stretch: 108%; font-size: 1.2rem; }
+  .sam { grid-area: sam; color: var(--bord-zacht); line-height: 1.5; max-width: 70ch; }
+  .her { grid-area: her; color: var(--bord-zacht); font-stretch: 85%; font-size: 0.92rem; }
+  .st { grid-area: st; font-stretch: 85%; font-weight: 600; }
+  .ok { color: var(--vlan-30); }
+  .nu { color: var(--vlan-20); }
 </style>

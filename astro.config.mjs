@@ -10,7 +10,7 @@ export default defineConfig({
   integrations: [
     mermaid(),
     starlight({
-      title: 'Sam Slaats | Projecten',
+      title: 'Sam Slaats',
       description: 'Infrastructuurprojecten: ontwerpkeuzes, bouwstappen en storingen.',
       locales: {
         root: { label: 'Nederlands', lang: 'nl' },
@@ -30,6 +30,10 @@ export default defineConfig({
         {
           label: 'Medica+ (enterprise wifi)',
           items: [{ autogenerate: { directory: 'medica-plus' } }],
+        },
+        {
+          label: 'Microsoft 365-tenant (stage)',
+          items: [{ autogenerate: { directory: 'm365-stage' } }],
         },
         {
           label: 'Verbeek Logistiek (VMware-lab)',

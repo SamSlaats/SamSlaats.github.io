@@ -1,7 +1,6 @@
 ---
 title: Storingen en herstel
 description: Wat er stukging, bewust of onbewust, en hoe het hersteld is.
-draft: true
 sidebar:
   order: 6
 ---
@@ -33,7 +32,7 @@ als oorzaak aanwijst.
 
 ## 2. OPNsense en de switch bereiken elkaar niet
 
-**Datum.** 13 oktober 2026, fase 1. **Status: nog open.**
+**Datum.** 13 en 14 oktober 2026, fase 1. **Status: opgelost.**
 
 **Symptoom.** Een ping van OPNsense (10.10.10.1) naar de switch (10.10.10.2) kreeg geen
 antwoord, en andersom ook niet. Op de switch:
@@ -88,27 +87,53 @@ heeft `000c.2964.818e`. Het adres bleek van **Management1** te zijn.
 Bij vEOS wordt de eerste netwerkkaart van de VM altijd Management1, en pas de tweede
 Ethernet1. Ik had de eerste kaart aan het trunksegment gehangen.
 
-**Herstel.** In Workstation de kaarten op MAC-adres opgezocht (onder Advanced) en
-Management1 van het trunksegment gehaald.
+**Herstel (deels).** In Workstation de kaarten op MAC-adres opgezocht (onder Advanced) en
+Management1 losgekoppeld. Dat bleek niet genoeg: zie oorzaak D.
 
 ### Oorzaak C: na een herstart was de configuratie weg
 
 Na een herstart van OPNsense stond `em0` weer op 192.168.1.1, de fabrieksinstelling, en
 was de VLAN verdwenen.
 
-<!-- Vul aan: wat bleek de oorzaak? Draaide OPNsense nog vanaf de installatie-ISO
-     (live mode), en heb je hem daarna op de schijf geïnstalleerd? -->
+**Oorzaak.** OPNsense draaide nog vanaf de installatie-ISO (live mode). Wat ik instelde,
+stond alleen in het werkgeheugen en verdween bij een herstart.
 
-**Herstel.** VLAN 10 en het LAN-adres opnieuw ingesteld.
+**Herstel.** OPNsense op de virtuele schijf geïnstalleerd en VLAN 10 en het LAN-adres
+opnieuw ingesteld. Op 14 oktober beide machines
+opnieuw opgestart: de configuratie bleef staan.
 
-### Wat nog openstaat
+### Oorzaak D: Ethernet1 hing aan het verkeerde segment
 
-OPNsense verstuurt nu correct getagd verkeer in VLAN 10, en de trunk op de switch staat
-goed. Toch telt Ethernet1 nog steeds 0 ontvangen pakketten, en ontvangt OPNsense geen
-LLDP meer. Management1 is van het segment af, maar Ethernet1 is er nog niet aan gekoppeld.
+Na A, B en C verstuurde OPNsense correct getagd verkeer en stond de trunk op de switch
+goed. Toch bleef Ethernet1 op 0 ontvangen pakketten staan, en kwam er geen LLDP meer
+binnen op `em0`.
 
-Volgende stap: in Workstation controleren of de kaart met `00:0C:29:64:81:8E` op
-hetzelfde LAN segment staat als `em0` van OPNsense, en aanstaat (Connected).
+`show interfaces status` gaf Ethernet1 als `connected`. Dat zei weinig: in een VM betekent
+het alleen dat de virtuele netwerkkaart is aangesloten, niet aan welk segment. Ethernet2
+en Ethernet4, waar niets aan hing, stonden ook op `connected`.
+
+De netwerkkaarten in Workstation op MAC-adres naast elkaar gelegd:
+
+| Kaart | MAC | Hing aan | Hoort aan |
+|---|---|---|---|
+| OPNsense `em0` | `00:0C:29:86:A5:8C` | `Trunk` | `Trunk` |
+| vEOS Management1 | `00:0C:29:64:81:84` | `Trunk` (losgekoppeld) | niet aan de trunk |
+| vEOS Ethernet1 | `00:0C:29:64:81:8E` | `VLAN-10` | `Trunk` |
+
+De twee kaarten van de switch zaten op elkaars segment. Bij oorzaak B had ik Management1
+losgekoppeld, maar niet gecontroleerd of Ethernet1 daarna wel aan de trunk hing.
+
+**Herstel.** Ethernet1 op segment `Trunk` gezet en Management1 eraf gehaald. Binnen een
+halve minuut leerde de switch het MAC-adres van OPNsense op Ethernet1:
+
+```txt
+sw01>show mac address-table
+Vlan    Mac Address       Type        Ports      Moves   Last Move
+----    -----------       ----        -----      -----   ---------
+  10    000c.2986.a58c    DYNAMIC     Et1        1       0:00:24 ago
+```
+
+Daarna lukte de ping van de switch naar 10.10.10.1.
 
 ### Wat ik hiervan leer
 
@@ -120,3 +145,7 @@ hetzelfde LAN segment staat als `em0` van OPNsense, en aanstaat (Connected).
   een VM zegt niets over hoe het besturingssysteem ze noemt.
 - **Eén adres, één interface.** Twee interfaces in hetzelfde subnet geven gedrag dat
   lijkt te werken, maar het verkeer gaat de verkeerde kant op.
+- **Controleer een herstel ook echt.** Bij oorzaak B nam ik aan dat de bekabeling daarna
+  klopte. Een blik op de MAC-adressen van álle kaarten had een avond gescheeld.
+- **Eén symptoom kan meerdere oorzaken hebben.** A, B, C en D gaven allemaal hetzelfde
+  beeld: geen ping. Pas toen alle vier weg waren, werkte het.
