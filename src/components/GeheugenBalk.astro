@@ -1,22 +1,29 @@
 ---
-import { machines, hostRam } from '../data/lab';
+import { machines, hostRam, hostReserve } from '../data/lab';
 const altijd = machines.filter((m) => m.altijd).reduce((s, m) => s + m.ram, 0);
 const totaal = machines.reduce((s, m) => s + m.ram, 0);
+// ruimte voor VM's die alleen draaien wanneer nodig, na de host en wat altijd aan staat
+const ruimte = hostRam - hostReserve - altijd;
+const past = hostReserve + totaal <= hostRam;
+const vrij = Math.max(0, hostRam - hostReserve - totaal);
 ---
 <div class="geheugen not-content">
-  <div class="balk" role="img" aria-label={`${altijd} GB altijd in gebruik, ${totaal} GB als alles draait, van ${hostRam} GB`}>
+  <div class="balk" role="img" aria-label={`Host ${hostReserve} GB, ${altijd} GB altijd in gebruik, ${totaal} GB als alles draait, van ${hostRam} GB`}>
+    <span class="host" style={`flex: ${hostReserve}`} title={`Windows en Workstation, ${hostReserve} GB (gemeten)`}><em>Windows</em></span>
     {machines.map((m) => (
       <span class={m.altijd ? '' : 'soms'} style={`flex: ${m.ram}; --c: var(--vlan-${m.vlan})`} title={`${m.naam}, ${m.ram} GB`}>
         {m.ram > 1 && <em>{m.naam}</em>}
       </span>
     ))}
-    <span class="vrij" style={`flex: ${hostRam - totaal}`}><em>Windows en reserve</em></span>
+    {vrij > 0 && <span class="vrij" style={`flex: ${vrij}`}><em>Vrij</em></span>}
   </div>
   <dl>
     <div><dt>Altijd aan</dt><dd>{altijd} GB</dd></div>
     <div><dt>Alles tegelijk</dt><dd>{totaal} GB</dd></div>
     <div><dt>Host</dt><dd>{hostRam} GB</dd></div>
+    <div><dt>Ruimte voor de rest</dt><dd>{ruimte} GB</dd></div>
   </dl>
+  {!past && <p class="uitleg">Alles tegelijk past niet: de host heeft zelf {hostReserve} GB nodig. Wat alleen bij gebruik draait, staat dus nooit allemaal tegelijk aan.</p>}
   <p class="uitleg">Gearceerd: draait alleen wanneer nodig. Kleur: het VLAN van de machine.</p>
 </div>
 
@@ -27,6 +34,8 @@ const totaal = machines.reduce((s, m) => s + m.ram, 0);
   .balk em { font-style: normal; font-stretch: 70%; font-weight: 600; font-size: 0.85rem; color: #0b1626; padding-left: 0.4rem; white-space: nowrap; }
   .balk .soms { background: repeating-linear-gradient(135deg, var(--c) 0 6px, color-mix(in srgb, var(--c) 45%, var(--bord-bg)) 6px 12px); }
   .balk .soms em { background: var(--c); margin-left: 0.35rem; padding: 0.15rem 0.4rem; }
+  .balk .host { background: var(--bord-vlak); }
+  .balk .host em { color: var(--bord-zacht); font-weight: 400; }
   .balk .vrij { background: var(--bord-vlak); outline: 1px dashed var(--bord-lijn); outline-offset: -1px; }
   .balk .vrij em { color: var(--bord-zacht); font-weight: 400; }
   dl { display: flex; gap: 2.5rem; margin: 1rem 0 0; flex-wrap: wrap; }

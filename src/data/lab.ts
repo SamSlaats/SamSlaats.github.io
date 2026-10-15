@@ -1,10 +1,13 @@
 // Eén bron voor de cijfers van het lab. De startpagina en de pagina Ontwerp lezen hieruit.
 // Pas dit bestand aan als er iets verandert, en zet dan ook `bijgewerkt` op vandaag.
 
-export const bijgewerkt = '2026-10-12';
+export const bijgewerkt = '2026-10-15';
 
 /** Geheugen van de pc waarop het lab draait, in GB. */
 export const hostRam = 32;
+
+/** Wat de host zelf nodig heeft (Windows en Workstation, zonder VM's), in GB. Gemeten op 2026-10-15. */
+export const hostReserve = 10;
 
 export const vlans = [
   { id: 10, naam: 'Management', subnet: '10.10.10.0/24', gateway: '10.10.10.1', doel: 'Beheer van firewall en switch' },
@@ -18,13 +21,13 @@ export const vlans = [
 export const machines = [
   { naam: 'OPNsense', rol: 'Firewall en router', os: 'OPNsense', vlan: 10, ram: 1, altijd: true, gebouwd: false },
   { naam: 'vEOS', rol: 'Managed switch', os: 'vEOS', vlan: 10, ram: 2, altijd: true, gebouwd: false },
-  { naam: 'DC01', rol: 'Domain controller', os: 'Windows server 2022', vlan: 20, ram: 2, altijd: true, gebouwd: false },
-  { naam: 'DC02', rol: 'Domain controller', os: 'Windows server 2022', vlan: 20, ram: 2, altijd: true, gebouwd: false },
-  { naam: 'Database', rol: 'Database van de applicatie', os: '', vlan: 20, ram: 4, altijd: true, gebouwd: false },
-  { naam: 'Monitoring', rol: 'Metingen en meldingen', os: '', vlan: 20, ram: 2, altijd: true, gebouwd: false },
-  { naam: 'Webserver', rol: 'Interne webapplicatie', os: '', vlan: 40, ram: 2, altijd: true, gebouwd: false },
-  { naam: 'Windows-client', rol: 'Testwerkplek', os: '', vlan: 30, ram: 4, altijd: false, gebouwd: false },
-  { naam: 'Back-upserver', rol: 'Back-up en restore', os: '', vlan: 20, ram: 4, altijd: false, gebouwd: false },
+  { naam: 'DC01', rol: 'Domain controller', os: 'Windows Server 2022', vlan: 20, ram: 2, altijd: true, gebouwd: false },
+  { naam: 'DC02', rol: 'Domain controller', os: 'Windows Server 2022', vlan: 20, ram: 2, altijd: true, gebouwd: false },
+  { naam: 'Database', rol: 'Database van de applicatie', os: 'Ubuntu Server', vlan: 20, ram: 2, altijd: true, gebouwd: false },
+  { naam: 'Monitoring', rol: 'Prometheus en Grafana', os: 'Ubuntu Server', vlan: 20, ram: 2, altijd: true, gebouwd: false },
+  { naam: 'Webserver', rol: 'Interne webapplicatie', os: 'Ubuntu Server', vlan: 40, ram: 1, altijd: true, gebouwd: false },
+  { naam: 'Windows-client', rol: 'Testwerkplek', os: 'Windows 11 Pro', vlan: 30, ram: 4, altijd: false, gebouwd: false },
+  { naam: 'Back-upserver', rol: 'Veeam Backup & Replication', os: 'Windows Server 2022', vlan: 20, ram: 8, altijd: false, gebouwd: false },
 ];
 
 // status: 'klaar', 'bezig' of 'gepland'
