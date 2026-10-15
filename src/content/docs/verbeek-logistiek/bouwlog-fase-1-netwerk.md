@@ -11,8 +11,9 @@ Het doel van deze log is het aantonen van het inrichten van een netwerk doormidd
 
 :::note[Stand van zaken]
 Fase 1 is nog bezig. De trunk tussen OPNsense en de switch werkt: de switch pingt de
-router in VLAN 10. VLAN 20, 30 en 40 staan op beide apparaten. Nog te doen: DHCP en een
-eerste firewallregel per VLAN, en een test vanaf een VM achter een access-poort.
+router in VLAN 10. VLAN 20, 30 en 40 staan op beide apparaten. De beheer-VM in VLAN 10
+draait: hij bereikt OPNsense, de switch en internet, en opent de webinterface van
+OPNsense. Nog te doen: de VLAN-interfaces benoemen, DHCP en een eerste firewallregel per VLAN, en een test vanaf een VM in VLAN 20.
 :::
 
 ## Wat ik gebouwd heb
@@ -42,9 +43,16 @@ op de switch.
 - Zero Touch Provisioning uitgezet, hostnaam `sw01`.
 - VLAN 10 (management), 20 (servers), 30 (clients) en 40 (dmz) aangemaakt.
 - Ethernet1 als trunk voor VLAN 10 t/m 40.
+- Ethernet2 als access-poort in VLAN 10, voor de beheer-VM.
 - Ethernet3 als access-poort in VLAN 20.
 - `interface Vlan10` met 10.10.10.2/24 als beheeradres.
 - De eerste netwerkkaart van de VM is Management1 en hangt niet aan de trunk.
+
+**Beheer-VM: Ubuntu 26.04 LTS**
+
+- Hostnaam `Beheer`, netwerkkaart `ens33` op LAN segment `VLAN-10` (Ethernet2 van de switch).
+- Vast adres 10.10.10.20/24, gateway en DNS-server 10.10.10.1 (Unbound op OPNsense).
+- Doel: de webinterface van OPNsense beheren vanuit VLAN 10.
 
 ## Logboek
 
@@ -55,6 +63,12 @@ op de switch.
 | 13 okt 2026 | OPNsense en switch kunnen elkaar niet pingen. Zoektocht gestart; drie oorzaken gevonden en opgelost, maar nog steeds geen verbinding. |
 | 14 okt 2026 | Echte oorzaak gevonden: Ethernet1 en Management1 zaten in Workstation op elkaars segment. Omgezet; de switch pingt OPNsense. |
 | 14 okt 2026 | VLAN 20, 30 en 40 op OPNsense toegevoegd. Beide machines herstart: de configuratie blijft bewaard. |
+| 15 okt 2026 | VLAN-interfaces willen benoemen (OPT1 t/m OPT3 naar Servers, Clients en DMZ). Het consolemenu van OPNsense heeft daar geen optie voor; het kan alleen in de webinterface. Die is vanaf de host niet bereikbaar, omdat de firewall de webinterface op WAN blokkeert. |
+| 15 okt 2026 | Begonnen aan een beheer-VM in VLAN 10: Ubuntu, `beheer`. Vanaf hier beheer ik OPNsense via de browser. Ethernet2 op de switch als access-poort in VLAN 10 gezet. |
+| 15 okt 2026 | Beheer-VM draait. Ping naar 10.10.10.1 (OPNsense), 10.10.10.2 (switch) en 8.8.8.8 lukt; de webinterface van OPNsense opent. Ping naar `google.com` mislukt: naamomzetting werkt nog niet. |
+| 15 okt 2026 | Oorzaak: op de beheer-VM stond geen DNS-server ingesteld. 10.10.10.1 (Unbound op OPNsense) ingesteld; ping naar `google.com` lukt. Bewust niet 8.8.8.8: alle machines vragen namen op via OPNsense, en in fase 2 via de DC's. |
+| 15 okt 2026 | MAC-adres van de beheer-VM gecontroleerd: de netwerkkaart hing aan segment `VLAN-40` in plaats van `VLAN-10`. Omgezet. Switchconfiguratie opgeslagen met `write memory`. |
+| 15 okt 2026 | Beheer-VM van DHCP-lease (10.10.10.194) omgezet naar vast adres 10.10.10.20, zodat de beheerplek ook werkt als DHCP niet werkt. |
 
 ## Bewijs
 
@@ -122,6 +136,34 @@ PING 10.10.10.1 (10.10.10.1) 72(100) bytes of data.
 --- 10.10.10.1 ping statistics ---
 5 packets transmitted, 5 received, 0% packet loss, time 8ms
 rtt min/avg/max/mdev = 0.587/0.949/2.161/0.607 ms, ipg/ewma 2.062/1.536 ms
+```
+
+De beheer-VM in VLAN 10: adres, DNS-server en bereikbaarheid van OPNsense, de switch en
+internet op naam. `ip -br a` en de ping naar `google.com` zijn gemeten na de overstap naar
+10.10.10.20; de overige uitvoer is van de eerste DHCP-lease.
+
+```txt
+gebruiker@Beheer:~$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+ens33            UP             10.10.10.20/24 fe80::20c:29ff:fe38:6a7f/64
+
+gebruiker@Beheer:~$ resolvectl
+Link 2 (ens33)
+    Current Scopes: DNS
+Current DNS Server: 10.10.10.1
+       DNS Servers: 10.10.10.1
+        DNS Domain: internal
+
+gebruiker@Beheer:~$ ping 10.10.10.1
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+
+gebruiker@Beheer:~$ ping 10.10.10.2
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+
+gebruiker@Beheer:~$ ping google.com
+PING google.com (142.250.27.102) 56(84) bytes of data.
+64 bytes from ra-in-f102.1e100.net (142.250.27.102): icmp_seq=1 ttl=127 time=18.9 ms
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
 ```
 
 ## Wat niet in één keer werkte
