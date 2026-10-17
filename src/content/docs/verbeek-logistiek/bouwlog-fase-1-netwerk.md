@@ -13,7 +13,7 @@ Het doel van deze log is het aantonen van het inrichten van een netwerk doormidd
 Fase 1 is nog bezig. De trunk tussen OPNsense en de switch werkt: de switch pingt de
 router in VLAN 10. VLAN 20, 30 en 40 staan op beide apparaten. De beheer-VM in VLAN 10
 draait: hij bereikt OPNsense, de switch en internet, en opent de webinterface van
-OPNsense. Nog te doen: de VLAN-interfaces benoemen, DHCP en een eerste firewallregel per VLAN, en een test vanaf een VM in VLAN 20.
+OPNsense. Nog te doen: DHCP en een eerste firewallregel per VLAN, en een test vanaf een VM in VLAN 20.
 :::
 
 ## Wat ik gebouwd heb
@@ -32,9 +32,12 @@ op de switch.
 **OPNsense 26.7**
 
 - WAN op `em1`, adres via DHCP van het NAT-netwerk van Workstation.
-- VLAN 10 als `em0_vlan10` op `em0`. Die is toegewezen als LAN, met 10.10.10.1/24.
+- VLAN 10 als `em0_vlan10` op `em0`, toegewezen als LAN, met 10.10.10.1/24.
 - VLAN 20, 30 en 40 als `em0_vlan20` t/m `em0_vlan40` (OPT1 t/m OPT3), met 10.10.20.1,
   10.10.30.1 en 10.10.40.1 (/24).
+- Elke interface heeft een description gelijk aan de VLAN-naam: Management (`lan`),
+  Servers (`opt1`), Clients (`opt2`) en DMZ (`opt3`). Alleen de description is aan te
+  passen; regels en DHCP verwijzen naar de interne naam tussen haakjes.
 - `em0` zelf heeft geen adres; die draagt alleen de VLAN's.
 
 **Arista vEOS-lab 4.36.1F (32-bit)**
@@ -69,6 +72,7 @@ op de switch.
 | 15 okt 2026 | Oorzaak: op de beheer-VM stond geen DNS-server ingesteld. 10.10.10.1 (Unbound op OPNsense) ingesteld; ping naar `google.com` lukt. Bewust niet 8.8.8.8: alle machines vragen namen op via OPNsense, en in fase 2 via de DC's. |
 | 15 okt 2026 | MAC-adres van de beheer-VM gecontroleerd: de netwerkkaart hing aan segment `VLAN-40` in plaats van `VLAN-10`. Omgezet. Switchconfiguratie opgeslagen met `write memory`. |
 | 15 okt 2026 | Beheer-VM van DHCP-lease (10.10.10.194) omgezet naar vast adres 10.10.10.20, zodat de beheerplek ook werkt als DHCP niet werkt. |
+| 17 okt 2026 | Via de webinterface vanaf de beheer-VM de descriptions ingesteld: Management, Servers, Clients en DMZ. LAN als laatste, omdat de beheer-VM daaraan hangt. De webinterface bleef daarna bereikbaar. |
 
 ## Bewijs
 
@@ -137,6 +141,16 @@ PING 10.10.10.1 (10.10.10.1) 72(100) bytes of data.
 5 packets transmitted, 5 received, 0% packet loss, time 8ms
 rtt min/avg/max/mdev = 0.587/0.949/2.161/0.607 ms, ipg/ewma 2.062/1.536 ms
 ```
+
+De interfaces in OPNsense (Interfaces → Overview), met hun nieuwe description. WAN is
+weggelaten.
+
+| Interface | Device | VLAN | Type | IPv4 |
+|---|---|---|---|---|
+| Management (`lan`) | `em0_vlan10` | 10 | static | 10.10.10.1/24 |
+| Servers (`opt1`) | `em0_vlan20` | 20 | static | 10.10.20.1/24 |
+| Clients (`opt2`) | `em0_vlan30` | 30 | static | 10.10.30.1/24 |
+| DMZ (`opt3`) | `em0_vlan40` | 40 | static | 10.10.40.1/24 |
 
 De beheer-VM in VLAN 10: adres, DNS-server en bereikbaarheid van OPNsense, de switch en
 internet op naam. `ip -br a` en de ping naar `google.com` zijn gemeten na de overstap naar
