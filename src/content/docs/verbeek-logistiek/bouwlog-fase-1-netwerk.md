@@ -73,6 +73,7 @@ op de switch.
 | 15 okt 2026 | MAC-adres van de beheer-VM gecontroleerd: de netwerkkaart hing aan segment `VLAN-40` in plaats van `VLAN-10`. Omgezet. Switchconfiguratie opgeslagen met `write memory`. |
 | 15 okt 2026 | Beheer-VM van DHCP-lease (10.10.10.194) omgezet naar vast adres 10.10.10.20, zodat de beheerplek ook werkt als DHCP niet werkt. |
 | 17 okt 2026 | Via de webinterface vanaf de beheer-VM de descriptions ingesteld: Management, Servers, Clients en DMZ. LAN als laatste, omdat de beheer-VM daaraan hangt. De webinterface bleef daarna bereikbaar. |
+| 23 okt 2026 | Switch opgeschoond: VLAN 999 `ongebruikt` aangemaakt en als native VLAN op Ethernet1 gezet, Ethernet4 uitgezet. Ethernet2 bleef aan: daar zit de beheer-VM. Doorgevoerd met een config session met `commit timer`; daarna bevestigd en opgeslagen met `write memory`. Onderbouwing bij [Beslissingen](/verbeek-logistiek/beslissingen/). |
 
 ## Bewijs
 
