@@ -48,6 +48,9 @@ op de switch.
 - Ethernet1 als trunk voor VLAN 10 t/m 40.
 - Ethernet2 als access-poort in VLAN 10, voor de beheer-VM.
 - Ethernet3 als access-poort in VLAN 20.
+- VLAN 999 (`ongebruikt`) als native VLAN op Ethernet1. Er zitten geen poorten in en het
+  heeft geen adres; zie [Beslissingen](/verbeek-logistiek/beslissingen/).
+- Ethernet2 heeft de description `beheer-vm`. Ethernet4 is niet in gebruik en staat uit.
 - `interface Vlan10` met 10.10.10.2/24 als beheeradres.
 - De eerste netwerkkaart van de VM is Management1 en hangt niet aan de trunk.
 
@@ -89,6 +92,31 @@ Et1           10,20,30,40
 
 Port          Vlans allowed and active in management domain
 Et1           10,20,30,40
+```
+
+Na het opschonen op 23 okt is de native VLAN van Ethernet1 VLAN 999. De toegestane
+VLAN's zijn niet veranderd:
+
+```txt
+sw01#show interfaces Ethernet1 switchport
+Name: Et1
+Administrative Mode: trunk
+Operational Mode: trunk
+Trunking Native Mode VLAN: 999 (ongebruikt)
+Administrative Native VLAN tagging: disabled
+Trunking VLANs Enabled: 10,20,30,40
+```
+
+Ethernet4 staat uit, Ethernet2 heeft een description:
+
+```txt
+sw01#show interfaces status
+Port       Name                    Status       Vlan     Duplex Speed  Type
+Et1        trunk naar OPNsense     connected    trunk    full   1G     EbraTestPhyPort
+Et2        beheer-vm               connected    10       full   1G     EbraTestPhyPort
+Et3        naar servers-segment    connected    20       full   1G     EbraTestPhyPort
+Et4                                disabled     1        full   1G     EbraTestPhyPort
+Ma1                                notconnect   routed   auto   auto   10/100/1000
 ```
 
 OPNsense verstuurt de ARP-aanvraag getagd in VLAN 10:
