@@ -7,14 +7,15 @@ sidebar:
 
 ## Doel
 
-Het doel van deze log is het aantonen van het inrichten van een netwerk doormiddel van VLAN tagging/trunking, managed switch en het gebruik maken van OPNsense.
+Het doel van deze log is het aantonen van het inrichten van een netwerk door middel van VLAN tagging/trunking, managed switch en het gebruik maken van OPNsense.
 
 :::note[Stand van zaken]
 Fase 1 is klaar. De trunk tussen OPNsense en de switch werkt, en VLAN 10 t/m 40 staan op
 beide apparaten. De beheer-VM in VLAN 10 bereikt OPNsense, de switch en internet. In
 VLAN 20 is de hele keten getest: een VM achter Ethernet3 krijgt een adres via DHCP en
-pingt OPNsense. DHCP en regels voor Clients en DMZ komen in de fase waarin die VLAN's hun
-eerste machines krijgen, samen met de echte regels tussen de VLAN's.
+pingt OPNsense, en de firewall houdt verkeer van VLAN 20 naar VLAN 10 tegen. DHCP en regels
+voor Clients en DMZ komen in de fase waarin die VLAN's hun eerste machines krijgen, samen
+met de echte regels tussen de VLAN's.
 :::
 
 ## Wat ik gebouwd heb
@@ -27,7 +28,7 @@ op de switch.
 | Segment | Verbindt | Verkeer |
 |---|---|---|
 | `Trunk` | OPNsense `em0` met switch Ethernet1 | VLAN 10 t/m 40, getagd |
-| Eén per VLAN, zoals `VLAN-10` | Switch Ethernet2 t/m 4 met de VM's in dat VLAN | Ongetagd |
+| Eén per VLAN, zoals `VLAN-10` | Switch Ethernet2 en 3 met de VM's in dat VLAN (Ethernet4 staat uit) | Ongetagd |
 | NAT | OPNsense `em1` met het netwerk van de host | Internet |
 
 **OPNsense 26.7**
@@ -54,7 +55,7 @@ op de switch.
 - Ethernet2 als access-poort in VLAN 10, voor de beheer-VM.
 - Ethernet3 als access-poort in VLAN 20.
 - VLAN 999 (`ongebruikt`) als native VLAN op Ethernet1. Er zitten geen poorten in en het
-  heeft geen adres; zie [Beslissingen](/verbeek-logistiek/beslissingen/).
+  heeft geen adres.
 - Ethernet2 heeft de description `beheer-vm`. Ethernet4 is niet in gebruik en staat uit.
 - `interface Vlan10` met 10.10.10.2/24 als beheeradres.
 - De eerste netwerkkaart van de VM is Management1 en hangt niet aan de trunk.
@@ -101,15 +102,17 @@ Advanced in Workstation):
 | 15 okt 2026 | MAC-adres van de beheer-VM gecontroleerd: de netwerkkaart hing aan segment `VLAN-40` in plaats van `VLAN-10`. Omgezet. Switchconfiguratie opgeslagen met `write memory`. |
 | 15 okt 2026 | Beheer-VM van DHCP-lease (10.10.10.194) omgezet naar vast adres 10.10.10.20, zodat de beheerplek ook werkt als DHCP niet werkt. |
 | 17 okt 2026 | Via de webinterface vanaf de beheer-VM de descriptions ingesteld: Management, Servers, Clients en DMZ. LAN als laatste, omdat de beheer-VM daaraan hangt. De webinterface bleef daarna bereikbaar. |
-| 23 okt 2026 | Switch opgeschoond: VLAN 999 `ongebruikt` aangemaakt en als native VLAN op Ethernet1 gezet, Ethernet4 uitgezet. Ethernet2 bleef aan: daar zit de beheer-VM. Doorgevoerd met een config session met `commit timer`; daarna bevestigd en opgeslagen met `write memory`. Onderbouwing bij [Beslissingen](/verbeek-logistiek/beslissingen/). |
+| 23 okt 2026 | Switch opgeschoond: VLAN 999 `ongebruikt` aangemaakt en als native VLAN op Ethernet1 gezet, Ethernet4 uitgezet. Ethernet2 bleef aan: daar zit de beheer-VM. Doorgevoerd met een config session met `commit timer`; daarna bevestigd en opgeslagen met `write memory`. |
 | 23 okt 2026 | DHCP op Servers aangezet in Dnsmasq, met range 10.10.20.100 t/m 10.10.20.200. Tijdelijke regel voor ICMP van `Servers net` naar `This Firewall` gemaakt. Die kwam eerst onder floating rules terecht, zonder interface; omgezet naar alleen Servers, zodat hij straks niet voor de echte regels op Servers gaat. |
 | 23 okt 2026 | Test-VM in VLAN 20 krijgt geen DHCP-adres. Op Ethernet3 kwam niets binnen: in Workstation zaten Ethernet3 en Ethernet4 op elkaars segment (adapter 4 op `VLAN-30`, adapter 5 op `VLAN-20`). Ontstaan doordat Management1 bij het ontwerp niet was meegeteld. Adapter 4 op `VLAN-20` gezet, adapter 5 losgekoppeld. |
 | 23 okt 2026 | Daarna kwamen de DHCP-aanvragen wel aan op OPNsense (packet capture op `em0` en op Servers), maar er ging geen antwoord terug. Opgelost na een herstart van de VM's; de precieze oorzaak is niet vastgesteld. Zie [Storingen en herstel](/verbeek-logistiek/storingen/). |
 | 23 okt 2026 | End-to-end test geslaagd: de test-VM krijgt 10.10.20.184 via DHCP en pingt 10.10.20.1. De switch ziet de VM op Ethernet3 in VLAN 20. |
+| 23 okt 2026 | Negatieve test: de test-VM pingt de beheer-VM (10.10.10.20) en krijgt geen antwoord. Verkeer van VLAN 20 naar VLAN 10 wordt tegengehouden. Native VLAN 999 bleef staan na een herstart van de switch. |
 
 ## Bewijs
 
-De switch: Ethernet1 is een trunk en laat VLAN 10 t/m 40 toe.
+De switch op 13 okt: Ethernet1 is een trunk en laat VLAN 10 t/m 40 toe. De native VLAN
+stond toen nog op 1; zie verderop voor de stand na het opschonen.
 
 ```txt
 sw01>show interfaces trunk
@@ -148,6 +151,15 @@ Et4                                disabled     1        full   1G     EbraTestP
 Ma1                                notconnect   routed   auto   auto   10/100/1000
 ```
 
+Na een herstart van de switch op 23 okt staat de native VLAN nog op 999. De wijziging is
+dus opgeslagen met `write memory`:
+
+```txt
+sw01>show interfaces Ethernet1 switchport | include Native
+Trunking Native Mode VLAN: 999 (ongebruikt)
+Administrative Native VLAN tagging: disabled
+```
+
 OPNsense verstuurt de ARP-aanvraag getagd in VLAN 10:
 
 ```txt
@@ -171,7 +183,8 @@ Port      InOctets    InUcastPkts    InMcastPkts    InBcastPkts
 Et1            674              6              0              0
 ```
 
-Na een herstart staan alle VLAN's nog op de switch:
+Op 14 okt, na een herstart, staan alle VLAN's nog op de switch. Dit is van vóór het
+opschonen: Ethernet2 zat toen nog in VLAN 1 en VLAN 999 bestond nog niet.
 
 ```txt
 sw01#show vlan
@@ -210,8 +223,8 @@ weggelaten.
 | Clients (`opt2`) | `em0_vlan30` | 30 | static | 10.10.30.1/24 |
 | DMZ (`opt3`) | `em0_vlan40` | 40 | static | 10.10.40.1/24 |
 
-DHCP-ranges in Dnsmasq (Services → Dnsmasq DNS & DHCP → DHCP ranges). Dnsmasq luistert
-op Management en Servers.
+DHCP-range op Servers in Dnsmasq (Services → Dnsmasq DNS & DHCP → DHCP ranges). Management
+had al een range; de beheer-VM gebruikt een vast adres.
 
 | Interface | Start | Eind | Description |
 |---|---|---|---|
@@ -290,6 +303,17 @@ Vlan    Mac Address       Type        Ports      Moves   Last Move
   30    000c.2986.a58c    DYNAMIC     Et1        1       0:01:01 ago
   40    000c.2986.a58c    DYNAMIC     Et1        1       0:01:20 ago
 Total Mac Addresses for this criterion: 6
+```
+
+De firewall houdt verkeer tussen de VLAN's tegen. Op Servers staat alleen ICMP naar de
+firewall zelf open; een ping van de test-VM naar de beheer-VM in VLAN 10 komt er niet door:
+
+```txt
+root@ubuntu-server:/# ping -c 4 10.10.10.20
+PING 10.10.10.20 (10.10.10.20) 56(84) bytes of data.
+
+--- 10.10.10.20 ping statistics ---
+4 packets transmitted, 0 received, 100% packet loss, time 3105ms
 ```
 
 ## Wat niet in één keer werkte
