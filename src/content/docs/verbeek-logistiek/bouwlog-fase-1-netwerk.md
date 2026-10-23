@@ -10,10 +10,11 @@ sidebar:
 Het doel van deze log is het aantonen van het inrichten van een netwerk doormiddel van VLAN tagging/trunking, managed switch en het gebruik maken van OPNsense.
 
 :::note[Stand van zaken]
-Fase 1 is nog bezig. De trunk tussen OPNsense en de switch werkt: de switch pingt de
-router in VLAN 10. VLAN 20, 30 en 40 staan op beide apparaten. De beheer-VM in VLAN 10
-draait: hij bereikt OPNsense, de switch en internet, en opent de webinterface van
-OPNsense. Nog te doen: DHCP en een eerste firewallregel per VLAN, en een test vanaf een VM in VLAN 20.
+Fase 1 is klaar. De trunk tussen OPNsense en de switch werkt, en VLAN 10 t/m 40 staan op
+beide apparaten. De beheer-VM in VLAN 10 bereikt OPNsense, de switch en internet. In
+VLAN 20 is de hele keten getest: een VM achter Ethernet3 krijgt een adres via DHCP en
+pingt OPNsense. DHCP en regels voor Clients en DMZ komen in de fase waarin die VLAN's hun
+eerste machines krijgen, samen met de echte regels tussen de VLAN's.
 :::
 
 ## Wat ik gebouwd heb
@@ -39,6 +40,10 @@ op de switch.
   Servers (`opt1`), Clients (`opt2`) en DMZ (`opt3`). Alleen de description is aan te
   passen; regels en DHCP verwijzen naar de interne naam tussen haakjes.
 - `em0` zelf heeft geen adres; die draagt alleen de VLAN's.
+- DHCP via Dnsmasq op Management en Servers. Servers deelt 10.10.20.100 t/m
+  10.10.20.200 uit; de adressen daaronder blijven vrij voor de servers met een vast adres.
+- Op Servers één tijdelijke regel: ICMP van `Servers net` naar `This Firewall`, voor de
+  test in VLAN 20. Die gaat weg zodra de echte regels tussen de VLAN's er staan.
 
 **Arista vEOS-lab 4.36.1F (32-bit)**
 
@@ -54,11 +59,31 @@ op de switch.
 - `interface Vlan10` met 10.10.10.2/24 als beheeradres.
 - De eerste netwerkkaart van de VM is Management1 en hangt niet aan de trunk.
 
+Workstation noemt de netwerkkaarten Network Adapter 1 t/m 5, vEOS noemt ze Management1
+en Ethernet1 t/m 4. Omdat Management1 de eerste kaart is, schuift alles één op. De
+vertaling, gecontroleerd op MAC-adres (`show interfaces | include ^Eth|address` tegen
+Advanced in Workstation):
+
+| Workstation | MAC | vEOS | LAN segment |
+|---|---|---|---|
+| Network Adapter 1 | `00:0C:29:64:81:84` | Management1 | geen |
+| Network Adapter 2 | `00:0C:29:64:81:8E` | Ethernet1 | `Trunk` |
+| Network Adapter 3 | `00:0C:29:64:81:98` | Ethernet2 | `VLAN-10` |
+| Network Adapter 4 | `00:0C:29:64:81:A2` | Ethernet3 | `VLAN-20` |
+| Network Adapter 5 | `00:0C:29:64:81:AC` | Ethernet4 | losgekoppeld (poort staat uit) |
+
 **Beheer-VM: Ubuntu 26.04 LTS**
 
 - Hostnaam `Beheer`, netwerkkaart `ens33` op LAN segment `VLAN-10` (Ethernet2 van de switch).
 - Vast adres 10.10.10.20/24, gateway en DNS-server 10.10.10.1 (Unbound op OPNsense).
 - Doel: de webinterface van OPNsense beheren vanuit VLAN 10.
+
+**Test-VM: Ubuntu Server**
+
+- 2 GB RAM, netwerkkaart `ens33` (MAC `00:0C:29:CB:BF:F4`) op LAN segment `VLAN-20`
+  (Ethernet3 van de switch).
+- Adres via DHCP. Alleen voor tests: hij blijft bestaan zodat de test na een wijziging aan
+  switch of firewall te herhalen is. De echte servers in VLAN 20 krijgen een vast adres.
 
 ## Logboek
 
@@ -77,6 +102,10 @@ op de switch.
 | 15 okt 2026 | Beheer-VM van DHCP-lease (10.10.10.194) omgezet naar vast adres 10.10.10.20, zodat de beheerplek ook werkt als DHCP niet werkt. |
 | 17 okt 2026 | Via de webinterface vanaf de beheer-VM de descriptions ingesteld: Management, Servers, Clients en DMZ. LAN als laatste, omdat de beheer-VM daaraan hangt. De webinterface bleef daarna bereikbaar. |
 | 23 okt 2026 | Switch opgeschoond: VLAN 999 `ongebruikt` aangemaakt en als native VLAN op Ethernet1 gezet, Ethernet4 uitgezet. Ethernet2 bleef aan: daar zit de beheer-VM. Doorgevoerd met een config session met `commit timer`; daarna bevestigd en opgeslagen met `write memory`. Onderbouwing bij [Beslissingen](/verbeek-logistiek/beslissingen/). |
+| 23 okt 2026 | DHCP op Servers aangezet in Dnsmasq, met range 10.10.20.100 t/m 10.10.20.200. Tijdelijke regel voor ICMP van `Servers net` naar `This Firewall` gemaakt. Die kwam eerst onder floating rules terecht, zonder interface; omgezet naar alleen Servers, zodat hij straks niet voor de echte regels op Servers gaat. |
+| 23 okt 2026 | Test-VM in VLAN 20 krijgt geen DHCP-adres. Op Ethernet3 kwam niets binnen: in Workstation zaten Ethernet3 en Ethernet4 op elkaars segment (adapter 4 op `VLAN-30`, adapter 5 op `VLAN-20`). Ontstaan doordat Management1 bij het ontwerp niet was meegeteld. Adapter 4 op `VLAN-20` gezet, adapter 5 losgekoppeld. |
+| 23 okt 2026 | Daarna kwamen de DHCP-aanvragen wel aan op OPNsense (packet capture op `em0` en op Servers), maar er ging geen antwoord terug. Opgelost na een herstart van de VM's; de precieze oorzaak is niet vastgesteld. Zie [Storingen en herstel](/verbeek-logistiek/storingen/). |
+| 23 okt 2026 | End-to-end test geslaagd: de test-VM krijgt 10.10.20.184 via DHCP en pingt 10.10.20.1. De switch ziet de VM op Ethernet3 in VLAN 20. |
 
 ## Bewijs
 
@@ -181,6 +210,19 @@ weggelaten.
 | Clients (`opt2`) | `em0_vlan30` | 30 | static | 10.10.30.1/24 |
 | DMZ (`opt3`) | `em0_vlan40` | 40 | static | 10.10.40.1/24 |
 
+DHCP-ranges in Dnsmasq (Services → Dnsmasq DNS & DHCP → DHCP ranges). Dnsmasq luistert
+op Management en Servers.
+
+| Interface | Start | Eind | Description |
+|---|---|---|---|
+| Servers | 10.10.20.100 | 10.10.20.200 | Servers dynamisch |
+
+De tijdelijke regel op Servers (Firewall → Rules):
+
+| Interface | Richting | Protocol | Bron | Doel | Description |
+|---|---|---|---|---|---|
+| Servers | in | IPv4 ICMP | `Servers net` | `This Firewall` | TIJDELIJK #2: ICMP-test, opruimen bij inter-VLAN-regels |
+
 De beheer-VM in VLAN 10: adres, DNS-server en bereikbaarheid van OPNsense, de switch en
 internet op naam. `ip -br a` en de ping naar `google.com` zijn gemeten na de overstap naar
 10.10.10.20; de overige uitvoer is van de eerste DHCP-lease.
@@ -209,10 +251,55 @@ PING google.com (142.250.27.102) 56(84) bytes of data.
 3 packets transmitted, 3 received, 0% packet loss, time 2003ms
 ```
 
+De end-to-end test in VLAN 20: de test-VM achter Ethernet3 krijgt een adres via DHCP en
+pingt OPNsense. Daarmee werkt de hele keten: VM, access-poort Ethernet3 (VLAN 20), trunk
+Ethernet1, OPNsense.
+
+```txt
+root@ubuntu-server:/# ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+ens33            UNKNOWN        10.10.20.184/24 metric 100 fe80::20c:29ff:fecb:bff4/64
+
+root@ubuntu-server:/# ip link show ens33
+2: ens33: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UNKNOWN mode DEFAULT group default qlen 1000
+    link/ether 00:0c:29:cb:bf:f4 brd ff:ff:ff:ff:ff:ff
+
+root@ubuntu-server:/# ping -c 4 10.10.20.1
+PING 10.10.20.1 (10.10.20.1) 56(84) bytes of data.
+64 bytes from 10.10.20.1: icmp_seq=1 ttl=64 time=3.08 ms
+64 bytes from 10.10.20.1: icmp_seq=2 ttl=64 time=3.28 ms
+64 bytes from 10.10.20.1: icmp_seq=3 ttl=64 time=3.14 ms
+64 bytes from 10.10.20.1: icmp_seq=4 ttl=64 time=3.16 ms
+
+--- 10.10.20.1 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+rtt min/avg/max/mdev = 3.075/3.164/3.280/0.073 ms
+```
+
+De switch leert het MAC-adres van de test-VM op Ethernet3 en dat van OPNsense op
+Ethernet1, beide in VLAN 20:
+
+```txt
+sw01>show mac address-table
+Vlan    Mac Address       Type        Ports      Moves   Last Move
+----    -----------       ----        -----      -----   ---------
+  10    000c.2938.6a7f    DYNAMIC     Et2        1       0:02:07 ago
+  10    000c.2986.a58c    DYNAMIC     Et1        1       0:02:22 ago
+  20    000c.2986.a58c    DYNAMIC     Et1        1       0:02:02 ago
+  20    000c.29cb.bff4    DYNAMIC     Et3        1       0:02:02 ago
+  30    000c.2986.a58c    DYNAMIC     Et1        1       0:01:01 ago
+  40    000c.2986.a58c    DYNAMIC     Et1        1       0:01:20 ago
+Total Mac Addresses for this criterion: 6
+```
+
 ## Wat niet in één keer werkte
 
-Twee storingen, uitgewerkt bij [Storingen en herstel](/verbeek-logistiek/storingen/):
+Vier storingen, uitgewerkt bij [Storingen en herstel](/verbeek-logistiek/storingen/):
 
 1. vEOS startte niet op omdat Aboot de schijf niet vond.
 2. OPNsense en de switch bereikten elkaar niet. Daar zaten meerdere oorzaken achter; de
    laatste en belangrijkste zat in de virtuele bekabeling, niet in de configuratie.
+3. De test-VM in VLAN 20 kreeg geen adres: Ethernet3 en Ethernet4 zaten in Workstation op
+   elkaars segment.
+4. Daarna kwamen de DHCP-aanvragen wel aan, maar antwoordde OPNsense niet. Opgelost na een
+   herstart; de oorzaak is niet vastgesteld.

@@ -1,7 +1,7 @@
 // Eén bron voor de cijfers van het lab. De startpagina en de pagina Ontwerp lezen hieruit.
 // Pas dit bestand aan als er iets verandert, en zet dan ook `bijgewerkt` op vandaag.
 
-export const bijgewerkt = '2026-10-15';
+export const bijgewerkt = '2026-10-23';
 
 /** Geheugen van de pc waarop het lab draait, in GB. */
 export const hostRam = 32;
@@ -19,8 +19,8 @@ export const vlans = [
 // altijd: draait continu (true) of alleen wanneer nodig (false)
 // gebouwd: zet op true zodra de machine echt bestaat en werkt
 export const machines = [
-  { naam: 'OPNsense', rol: 'Firewall en router', os: 'OPNsense', vlan: 10, ram: 1, altijd: true, gebouwd: false },
-  { naam: 'vEOS', rol: 'Managed switch', os: 'vEOS', vlan: 10, ram: 2, altijd: true, gebouwd: false },
+  { naam: 'OPNsense', rol: 'Firewall en router', os: 'OPNsense', vlan: 10, ram: 1, altijd: true, gebouwd: true },
+  { naam: 'vEOS', rol: 'Managed switch', os: 'vEOS', vlan: 10, ram: 2, altijd: true, gebouwd: true },
   { naam: 'Beheer', rol: 'Beheerplek voor de webinterface van OPNsense', os: 'Ubuntu 26.04 LTS', vlan: 10, ram: 4, altijd: false, gebouwd: true },
   { naam: 'DC01', rol: 'Domain controller', os: 'Windows Server 2022', vlan: 20, ram: 2, altijd: true, gebouwd: false },
   { naam: 'DC02', rol: 'Domain controller', os: 'Windows Server 2022', vlan: 20, ram: 2, altijd: true, gebouwd: false },
@@ -34,7 +34,7 @@ export const machines = [
 // status: 'klaar', 'bezig' of 'gepland'
 // href: vul het adres van de bouwlogpagina in zodra die gepubliceerd is, bijv. '/verbeek-logistiek/bouwlog-fase-1-netwerk/'
 export const fases: { nr: number; titel: string; status: 'klaar' | 'bezig' | 'gepland'; href?: string }[] = [
-  { nr: 1, titel: 'Netwerk', status: 'bezig' },
+  { nr: 1, titel: 'Netwerk', status: 'klaar', href: '/verbeek-logistiek/bouwlog-fase-1-netwerk/' },
   { nr: 2, titel: 'Identiteit', status: 'gepland' },
   { nr: 3, titel: 'Applicatie', status: 'gepland' },
   { nr: 4, titel: 'Back-up', status: 'gepland' },
@@ -48,5 +48,5 @@ export const onderdelen: { titel: string; href: string | null }[] = [
   { titel: 'Casus en eisen', href: '/verbeek-logistiek/casus/' },
   { titel: 'Ontwerp', href: '/verbeek-logistiek/ontwerp/' },
   { titel: 'Beslissingen', href: null },
-  { titel: 'Storingen en herstel', href: null },
+  { titel: 'Storingen en herstel', href: '/verbeek-logistiek/storingen/' },
 ];

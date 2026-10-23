@@ -149,3 +149,68 @@ Daarna lukte de ping van de switch naar 10.10.10.1.
   klopte. Een blik op de MAC-adressen van álle kaarten had een avond gescheeld.
 - **Eén symptoom kan meerdere oorzaken hebben.** A, B, C en D gaven allemaal hetzelfde
   beeld: geen ping. Pas toen alle vier weg waren, werkte het.
+
+## 3. Test-VM in VLAN 20 krijgt geen adres: Ethernet3 aan het verkeerde segment
+
+**Datum.** 23 oktober 2026, fase 1. **Status: opgelost.**
+
+**Symptoom.** De installer van de test-VM meldde `autoconfiguration failed`: geen adres
+via DHCP. Op de switch stond het MAC-adres van de VM (`000c.29cb.bff4`) nergens in de
+MAC-tabel, en Ethernet3 had nog nooit iets ontvangen, terwijl hij zelf wel verstuurde:
+
+```txt
+Port      InOctets    InUcastPkts    InMcastPkts    InBcastPkts
+Et3              0              0              0              0
+```
+
+**Oorzaak.** Hetzelfde patroon als bij storing 2: een virtuele kabel op de verkeerde
+plek. In Workstation stond adapter 4 op `VLAN-30` en adapter 5 op `VLAN-20`. In het
+ontwerp was ik vergeten dat Management1 de eerste kaart van vEOS is. Daardoor is adapter 4
+niet Ethernet4 maar Ethernet3, en zaten Ethernet3 en Ethernet4 op elkaars segment.
+
+**Herstel.** De kaarten op MAC-adres vergeleken met `show interfaces | include
+^Eth|address`. Adapter 4 (Ethernet3) op `VLAN-20` gezet, adapter 5 (Ethernet4) losgekoppeld,
+omdat die poort op de switch uit staat. Daarna stond het MAC-adres van de VM op Ethernet3
+in VLAN 20. De vertaaltabel tussen adapters en poorten staat nu in de
+[bouwlog](/verbeek-logistiek/bouwlog-fase-1-netwerk/).
+
+**Les.** Dit is de tweede keer dat de volgorde van de netwerkkaarten me opbreekt. Bij
+"geen verbinding" in deze opstelling: eerst de tellers van de switchpoort bekijken. Staat
+`InOctets` op 0, dan ligt het aan de virtuele bekabeling, en is het zinloos om naar
+configuratie te kijken.
+
+## 4. DHCP-aanvragen komen aan, maar OPNsense antwoordt niet
+
+**Datum.** 23 oktober 2026, fase 1. **Status: opgelost, oorzaak niet vastgesteld.**
+
+**Symptoom.** Na het herstel van storing 3 kreeg de test-VM nog steeds geen adres. De
+switch stuurde de aanvragen wel de trunk op: de teller `OutBcastPkts` van Ethernet1 liep op
+bij elke poging, en Ethernet1 stond in VLAN 20 op `forwarding`.
+
+**Aanpak.** Van de switch naar OPNsense, met packet capture in OPNsense:
+
+1. Op `em0`, de fysieke kaart onder de VLAN's, kwam de aanvraag getagd binnen:
+
+   ```txt
+   00:0c:29:cb:bf:f4 > ff:ff:ff:ff:ff:ff, 802.1Q, vlan 20, IPv4, 0.0.0.0.68 > 255.255.255.255.67: UDP, length 300
+   ```
+
+2. Op Servers (`em0_vlan20`) kwam dezelfde aanvraag binnen, zonder tag. Het VLAN-interface
+   ontving hem dus. Er ging alleen geen antwoord terug.
+
+Na een herstart van de VM's (Workstation kon een bestand niet verwijderen) kreeg de
+test-VM wel een adres: 10.10.20.184.
+
+**Oorzaak.** Niet vastgesteld. Het waarschijnlijkst is dat Dnsmasq de nieuwe instellingen
+voor Servers nog niet had geladen, maar dat heb ik voor de herstart niet in het log van
+Dnsmasq gecontroleerd. Dat is dus een vermoeden, geen bewijs.
+
+**Les.**
+- Een packet capture met een poortfilter op het parent-interface ziet getagde frames
+  niet: het filter zoekt UDP direct na de Ethernet-header, maar daar zit eerst de
+  VLAN-tag. Op `em0` dus zonder poortfilter vangen; op het VLAN-interface werkt het filter
+  wel. De eerste capture leek daardoor te zeggen dat er niets binnenkwam.
+- Een capture eerst stoppen en dan pas bekijken. Zolang hij loopt, kan de weergave leeg
+  zijn.
+- Bij de volgende wijziging aan Dnsmasq (DHCP voor Clients of DMZ) eerst testen zonder
+  herstart, en als het niet werkt het log bekijken. Dan is de oorzaak alsnog te vinden.
