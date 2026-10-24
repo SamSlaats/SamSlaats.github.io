@@ -206,3 +206,26 @@ netwerk, en alleen OPNsense haalt tijd van buiten.
   allebei de klok bij.
 - Alleen DC01 krijgt een bron ingesteld; DC02 en de leden van het domein volgen de
   domeinhiërarchie.
+
+## 9. Windows Server 2022 voor de domain controllers
+
+**Context**
+DC01 en DC02 draaien op Windows Server. Er is alleen een evaluatielicentie beschikbaar, en
+die is er voor zowel 2022 als 2025.
+
+**Opties**
+- *Windows Server 2025.* De nieuwste versie, met de langste ondersteuning.
+- *Windows Server 2022.* Reguliere ondersteuning is afgelopen in oktober 2026;
+  beveiligingsupdates lopen nog tot oktober 2031.
+
+**Keuze**
+Windows Server 2022. Veel bedrijven draaien nog op 2022, en daar wil ik me in verdiepen.
+Een latere fase kan de servers upgraden naar 2025, zodat ik daar ook ervaring mee opdoe.
+
+**Gevolgen**
+- Evaluatielicentie: 180 dagen, met `slmgr /rearm` vijf keer te verlengen, in totaal
+  ongeveer drie jaar. Daarna sluit de server zich elk uur af.
+- Een evaluatie-editie is op een domain controller niet om te zetten naar een volledige
+  licentie: AD DS moet er dan eerst af.
+- Een upgrade naar 2025 gaat daarom het best met nieuwe DC's op 2025 in hetzelfde domein,
+  de FSMO-rollen verhuizen en de oude DC's degraderen, en niet met een in-place upgrade.
