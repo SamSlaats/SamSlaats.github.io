@@ -101,6 +101,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 24 okt 2026 | Firewallregels voor de DC's en de Windows-client ontworpen (#14). Ontwerp, nog niet ingevoerd. |
 | 28 okt 2026 | Regels voor Servers ingevoerd in OPNsense, per DC een eigen regel: DNS en ICMP naar 10.10.20.1, NTP vanaf DC01, HTTP en HTTPS naar `! Intern`. Nog niet getest. |
 | 28 okt 2026 | Bij controle bleek dat de bronpoort ook ingevuld stond (`domain`, `ntp`, `http`, `https`). Een DC verstuurt vanaf een willekeurige hoge poort, dus die regels zouden nooit matchen. Bronpoort op any gezet; alleen de doelpoort is ingevuld. Twee regels stonden niet op richting `in`; gelijkgetrokken. |
+| 28 okt 2026 | Tijdelijke regel uit fase 1 (ICMP van `Servers net` naar `This Firewall`) verwijderd. ICMP op Servers mag nu alleen nog van DC01 en DC02 naar 10.10.20.1 (#11). |
 
 ## Bewijs
 
