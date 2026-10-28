@@ -16,8 +16,8 @@ OU-structuur met accounts en groepen, en Group Policy die aantoonbaar wordt toeg
 Fase 2 is begonnen. De ontwerpkeuzes staan vast (beslissing 3 t/m 9) en de firewallregels
 voor de DC's en de Windows-client zijn ontworpen. De regels voor Servers staan in OPNsense en
 zijn getest: DC01 bereikt de gateway en DNS via OPNsense, een machine zonder regel niet.
-DC01 heeft een vast adres, maar AD DS staat er nog niet op. Nog te doen: de forest aanmaken,
-DC02 bouwen, VLAN 30 en 40 inrichten, de regels voor Clients invoeren, accounts en Group
+De forest `verbeek.internal` staat op DC01, en DNS stuurt namen buiten het domein door naar
+OPNsense. Nog te doen op DC01: tijdbron instellen en `dcdiag`. Daarna DC02 bouwen, VLAN 30 en 40 inrichten, de regels voor Clients invoeren, accounts en Group
 Policy.
 :::
 
@@ -95,7 +95,7 @@ geen regel voor nodig.
 
 Alle regels: IPv4, richting `in`, bronpoort any.
 
-**DC01** (nog zonder AD DS)
+**DC01**
 
 - Netwerkkaart `00:0C:29:B3:DF:2F` op LAN segment `VLAN-20`, achter Ethernet3 van de switch.
   Op MAC-adres gecontroleerd. De test-VM hangt aan hetzelfde segment: in Workstation werkt
@@ -107,7 +107,13 @@ Alle regels: IPv4, richting `in`, bronpoort any.
   `.vmx`-bestand, ook de eenmalige bij opstarten, hervatten en het terugzetten van een
   snapshot. Volgens beslissing 8 haalt DC01 zijn tijd alleen van OPNsense; VMware mag de
   klok niet tussendoor bijstellen.
-- Tijdbron nu nog `Local CMOS Clock`. Na het aanmaken van de forest wordt dat OPNsense.
+- Tijdbron nog `Local CMOS Clock`. Wordt OPNsense (beslissing 8).
+- Forest en domein `verbeek.internal` (NetBIOS `VERBEEK`), aangemaakt met
+  `Install-ADDSForest`, met DNS-rol. DC01 is Global Catalog en heeft de FSMO-rollen.
+- Functioneel niveau van forest en domein: Windows Server 2016 (`WinThreshold`). Er bestaat
+  geen niveau 2019 of 2022; 2016 is het hoogste dat Server 2022 kent.
+- DNS-forwarder 10.10.20.1, door de wizard overgenomen van de DNS-instelling van vóór de
+  promotie.
 
 ## Logboek
 
@@ -122,6 +128,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 28 okt 2026 | `Resolve-DnsName google.com` op DC01 liep in een time-out. Met `-Server 10.10.20.1` kwam er wel antwoord, dus de firewall en Unbound werkten. `Get-DnsClientServerAddress` liet zien dat op `Ethernet0` geen DNS-server stond. 10.10.20.1 ingesteld; daarna werkt het. |
 | 28 okt 2026 | VMware Tools geïnstalleerd op DC01 en alle tijdsynchronisatie van VMware uitgezet in het `.vmx`-bestand. `w32tm /query /source` geeft `Local CMOS Clock`. |
 | 29 okt 2026 | Netwerkkaart van DC01 op MAC-adres gecontroleerd: `000c.29b3.df2f` staat op Ethernet3 in VLAN 20, gelijk aan het MAC-adres in Workstation. |
+| 29 okt 2026 | `Install-ADDSForest` gaf een fout op `-DomainMode Win22` en `-ForestMode Win22`: die waarde bestaat niet. De foutmelding noemt de geldige waarden; het hoogste is `WinThreshold` (Server 2016). Daarmee opnieuw uitgevoerd en DC01 gepromoveerd tot eerste DC van `verbeek.internal`. |
 
 ## Bewijs
 
@@ -179,6 +186,35 @@ Vlan    Mac Address       Type        Ports      Moves   Last Move
 ----    -----------       ----        -----      -----   ---------
   20    000c.29b3.df2f    DYNAMIC     Et3        1       0:15:20 ago
   20    000c.29cb.bff4    DYNAMIC     Et3        1       0:15:49 ago
+```
+
+De forest na de promotie. Functioneel niveau 2016, DC01 is Global Catalog en houdt de rollen
+Schema Master en Domain Naming Master:
+
+```txt
+PS C:\Users\Administrator> Get-ADForest
+
+ApplicationPartitions : {DC=DomainDnsZones,DC=verbeek,DC=internal, DC=ForestDnsZones,DC=verbeek,DC=internal}
+DomainNamingMaster    : DC01.verbeek.internal
+Domains               : {verbeek.internal}
+ForestMode            : Windows2016Forest
+GlobalCatalogs        : {DC01.verbeek.internal}
+Name                  : verbeek.internal
+RootDomain            : verbeek.internal
+SchemaMaster          : DC01.verbeek.internal
+Sites                 : {Default-First-Site-Name}
+```
+
+DNS op DC01 stuurt door naar OPNsense:
+
+```txt
+PS C:\Users\Administrator> Get-DnsServerForwarder
+
+UseRootHint        : True
+Timeout(s)         : 3
+EnableReordering   : True
+IPAddress          : 10.10.20.1
+ReorderedIPAddress : 10.10.20.1
 ```
 
 Tijdsynchronisatie van VMware uit, in het `.vmx`-bestand van DC01:
