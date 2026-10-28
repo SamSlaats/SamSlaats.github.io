@@ -17,8 +17,9 @@ Fase 2 is begonnen. De ontwerpkeuzes staan vast (beslissing 3 t/m 9) en de firew
 voor de DC's en de Windows-client zijn ontworpen. De regels voor Servers staan in OPNsense en
 zijn getest: DC01 bereikt de gateway en DNS via OPNsense, een machine zonder regel niet.
 De forest `verbeek.internal` staat op DC01, en DNS stuurt namen buiten het domein door naar
-OPNsense. Nog te doen op DC01: tijdbron instellen en `dcdiag`. Daarna DC02 bouwen, VLAN 30 en 40 inrichten, de regels voor Clients invoeren, accounts en Group
-Policy.
+OPNsense. DC01 haalt zijn tijd van OPNsense. Nog te doen op DC01: `dcdiag` opnieuw draaien
+(de eerste gaf twee fouten die waarschijnlijk tijdelijk zijn). Daarna DC02 bouwen, VLAN 30
+en 40 inrichten, de regels voor Clients invoeren, accounts en Group Policy.
 :::
 
 ## Ontwerp
@@ -101,19 +102,22 @@ Alle regels: IPv4, richting `in`, bronpoort any.
   Op MAC-adres gecontroleerd. De test-VM hangt aan hetzelfde segment: in Workstation werkt
   een LAN segment als een hub, dus meerdere VM's delen één switchpoort.
 - Vast adres 10.10.20.10/24 op `Ethernet0`.
-- DNS-server 10.10.20.1 (Unbound op OPNsense). Bij het aanmaken van de forest wordt dit de
-  forwarder; daarna wijst DC01 naar zichzelf.
+- DNS-server van DC01 zelf: 127.0.0.1, door de promotie ingesteld. Daarvoor 10.10.20.1.
 - VMware Tools geïnstalleerd. Alle tijdsynchronisatie van VMware staat uit in het
   `.vmx`-bestand, ook de eenmalige bij opstarten, hervatten en het terugzetten van een
   snapshot. Volgens beslissing 8 haalt DC01 zijn tijd alleen van OPNsense; VMware mag de
   klok niet tussendoor bijstellen.
-- Tijdbron nog `Local CMOS Clock`. Wordt OPNsense (beslissing 8).
+- Tijdbron 10.10.20.1 (OPNsense), ingesteld met `w32tm /config /manualpeerlist:10.10.20.1
+  /syncfromflags:manual /reliable:yes /update`. `/reliable:yes` maakt DC01 de betrouwbare
+  tijdbron van het domein.
+- Tijdzone `W. Europe Standard Time` (stond op Pacific, de standaard van de installatie).
 - Forest en domein `verbeek.internal` (NetBIOS `VERBEEK`), aangemaakt met
   `Install-ADDSForest`, met DNS-rol. DC01 is Global Catalog en heeft de FSMO-rollen.
 - Functioneel niveau van forest en domein: Windows Server 2016 (`WinThreshold`). Er bestaat
   geen niveau 2019 of 2022; 2016 is het hoogste dat Server 2022 kent.
 - DNS-forwarder 10.10.20.1, door de wizard overgenomen van de DNS-instelling van vóór de
-  promotie.
+  promotie. Root hints uit (`Set-DnsServerForwarder -UseRootHint $false`): als OPNsense niet
+  antwoordt, gaat de DC niet zelf naar internet. Zo loopt alle DNS via één punt (beslissing 6).
 
 ## Logboek
 
@@ -129,6 +133,8 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 28 okt 2026 | VMware Tools geïnstalleerd op DC01 en alle tijdsynchronisatie van VMware uitgezet in het `.vmx`-bestand. `w32tm /query /source` geeft `Local CMOS Clock`. |
 | 29 okt 2026 | Netwerkkaart van DC01 op MAC-adres gecontroleerd: `000c.29b3.df2f` staat op Ethernet3 in VLAN 20, gelijk aan het MAC-adres in Workstation. |
 | 29 okt 2026 | `Install-ADDSForest` gaf een fout op `-DomainMode Win22` en `-ForestMode Win22`: die waarde bestaat niet. De foutmelding noemt de geldige waarden; het hoogste is `WinThreshold` (Server 2016). Daarmee opnieuw uitgevoerd en DC01 gepromoveerd tot eerste DC van `verbeek.internal`. |
+| 29 okt 2026 | Root hints uitgezet op de DNS van DC01 en tijdbron ingesteld op 10.10.20.1. `w32tm /resync` meldde "no time data was available"; `w32tm /stripchart` naar 10.10.20.1 gaf wel antwoord met een afwijking van microseconden, dus NTP en de firewallregel werken. De tijdservice had nog geen meting gedaan. |
+| 29 okt 2026 | `dcdiag`: SystemLog en DFSREvent failed. In het systeemlog stond dat de tijdservice de klok 32394 seconden (ongeveer 9 uur) had verzet, en de tijden in de logs liepen 8 uur achter: de tijdzone stond op Pacific. Tijdzone naar `W. Europe Standard Time`. Beide fouten komen waarschijnlijk van de tijdsprong en het opzetten van SYSVOL; `dcdiag` wordt na 24 uur opnieuw gedraaid om dat te bevestigen. |
 
 ## Bewijs
 
@@ -215,6 +221,21 @@ Timeout(s)         : 3
 EnableReordering   : True
 IPAddress          : 10.10.20.1
 ReorderedIPAddress : 10.10.20.1
+```
+
+DC01 bereikt de NTP-server op OPNsense, met een afwijking van microseconden:
+
+```txt
+PS C:\Users\Administrator> w32tm /query /source
+10.10.20.1
+
+PS C:\Users\Administrator> w32tm /stripchart /computer:10.10.20.1 /samples:3 /dataonly
+Tracking 10.10.20.1 [10.10.20.1:123].
+Collecting 3 samples.
+The current time is 10/29/2026 12:21:21 AM.
+00:21:21, -00.0000110s
+00:21:23, +00.0000553s
+00:21:25, +00.0000240s
 ```
 
 Tijdsynchronisatie van VMware uit, in het `.vmx`-bestand van DC01:
