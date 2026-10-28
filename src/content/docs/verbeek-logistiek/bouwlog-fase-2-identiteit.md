@@ -100,6 +100,11 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 - Vast adres 10.10.20.10/24 op `Ethernet0`.
 - DNS-server 10.10.20.1 (Unbound op OPNsense). Bij het aanmaken van de forest wordt dit de
   forwarder; daarna wijst DC01 naar zichzelf.
+- VMware Tools geïnstalleerd. Alle tijdsynchronisatie van VMware staat uit in het
+  `.vmx`-bestand, ook de eenmalige bij opstarten, hervatten en het terugzetten van een
+  snapshot. Volgens beslissing 8 haalt DC01 zijn tijd alleen van OPNsense; VMware mag de
+  klok niet tussendoor bijstellen.
+- Tijdbron nu nog `Local CMOS Clock`. Na het aanmaken van de forest wordt dat OPNsense.
 
 ## Logboek
 
@@ -112,6 +117,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 28 okt 2026 | Tijdelijke regel uit fase 1 (ICMP van `Servers net` naar `This Firewall`) verwijderd. ICMP op Servers mag nu alleen nog van DC01 en DC02 naar 10.10.20.1 (#11). |
 | 28 okt 2026 | Getest. De test-VM (DHCP-adres, geen regel) pingt 10.10.20.1 niet meer; DC01 wel. |
 | 28 okt 2026 | `Resolve-DnsName google.com` op DC01 liep in een time-out. Met `-Server 10.10.20.1` kwam er wel antwoord, dus de firewall en Unbound werkten. `Get-DnsClientServerAddress` liet zien dat op `Ethernet0` geen DNS-server stond. 10.10.20.1 ingesteld; daarna werkt het. |
+| 28 okt 2026 | VMware Tools geïnstalleerd op DC01 en alle tijdsynchronisatie van VMware uitgezet in het `.vmx`-bestand. `w32tm /query /source` geeft `Local CMOS Clock`. |
 
 ## Bewijs
 
@@ -159,6 +165,17 @@ Name                                           Type   TTL   Section    IPAddress
 ----                                           ----   ---   -------    ---------
 google.com                                     AAAA   186   Answer     2a00:1450:400e:808::200e
 google.com                                     A      186   Answer     142.251.209.238
+```
+
+Tijdsynchronisatie van VMware uit, in het `.vmx`-bestand van DC01:
+
+```txt
+tools.syncTime = "FALSE"
+time.synchronize.continue = "FALSE"
+time.synchronize.restore = "FALSE"
+time.synchronize.resume.disk = "FALSE"
+time.synchronize.shrink = "FALSE"
+time.synchronize.tools.startup = "FALSE"
 ```
 
 ## Wat niet in één keer werkte
