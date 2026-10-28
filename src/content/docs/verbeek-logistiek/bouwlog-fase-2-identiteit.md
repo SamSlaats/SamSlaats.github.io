@@ -14,9 +14,11 @@ OU-structuur met accounts en groepen, en Group Policy die aantoonbaar wordt toeg
 
 :::note[Stand van zaken]
 Fase 2 is begonnen. De ontwerpkeuzes staan vast (beslissing 3 t/m 9) en de firewallregels
-voor de DC's en de Windows-client zijn ontworpen. De regels voor Servers staan in OPNsense,
-maar zijn nog niet getest: daarvoor moet DC01 er eerst zijn. Nog te doen: DC01 en DC02
-bouwen, VLAN 30 en 40 inrichten, de regels voor Clients invoeren, accounts en Group Policy.
+voor de DC's en de Windows-client zijn ontworpen. De regels voor Servers staan in OPNsense en
+zijn getest: DC01 bereikt de gateway en DNS via OPNsense, een machine zonder regel niet.
+DC01 heeft een vast adres, maar AD DS staat er nog niet op. Nog te doen: de forest aanmaken,
+DC02 bouwen, VLAN 30 en 40 inrichten, de regels voor Clients invoeren, accounts en Group
+Policy.
 :::
 
 ## Ontwerp
@@ -35,7 +37,7 @@ Kort:
 
 ## Firewallregels
 
-De regels voor Servers zijn op 28 okt ingevoerd, nog niet getest. De regels voor Clients
+De regels voor Servers zijn op 28 okt ingevoerd en getest. De regels voor Clients
 zijn nog alleen ontwerp. Elke regel staat op het interface waar het verkeer
 binnenkomt. OPNsense blokkeert alles waar geen pass-regel voor is, dus wat dicht moet
 blijven heeft geen eigen regel nodig; dat wordt met een negatieve test aangetoond.
@@ -93,6 +95,12 @@ geen regel voor nodig.
 
 Alle regels: IPv4, richting `in`, bronpoort any.
 
+**DC01** (nog zonder AD DS)
+
+- Vast adres 10.10.20.10/24 op `Ethernet0`.
+- DNS-server 10.10.20.1 (Unbound op OPNsense). Bij het aanmaken van de forest wordt dit de
+  forwarder; daarna wijst DC01 naar zichzelf.
+
 ## Logboek
 
 | Datum | Wat |
@@ -102,10 +110,56 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 28 okt 2026 | Regels voor Servers ingevoerd in OPNsense, per DC een eigen regel: DNS en ICMP naar 10.10.20.1, NTP vanaf DC01, HTTP en HTTPS naar `! Intern`. Nog niet getest. |
 | 28 okt 2026 | Bij controle bleek dat de bronpoort ook ingevuld stond (`domain`, `ntp`, `http`, `https`). Een DC verstuurt vanaf een willekeurige hoge poort, dus die regels zouden nooit matchen. Bronpoort op any gezet; alleen de doelpoort is ingevuld. Twee regels stonden niet op richting `in`; gelijkgetrokken. |
 | 28 okt 2026 | Tijdelijke regel uit fase 1 (ICMP van `Servers net` naar `This Firewall`) verwijderd. ICMP op Servers mag nu alleen nog van DC01 en DC02 naar 10.10.20.1 (#11). |
+| 28 okt 2026 | Getest. De test-VM (DHCP-adres, geen regel) pingt 10.10.20.1 niet meer; DC01 wel. |
+| 28 okt 2026 | `Resolve-DnsName google.com` op DC01 liep in een time-out. Met `-Server 10.10.20.1` kwam er wel antwoord, dus de firewall en Unbound werkten. `Get-DnsClientServerAddress` liet zien dat op `Ethernet0` geen DNS-server stond. 10.10.20.1 ingesteld; daarna werkt het. |
 
 ## Bewijs
 
-Nog niets: de regels voor Servers zijn ingevoerd, maar worden pas getest als DC01 draait.
+Een machine in VLAN 20 zonder eigen regel komt niet meer bij de firewall: de test-VM
+(adres via DHCP) pingt 10.10.20.1 zonder antwoord. Daarmee is ook bewezen dat de tijdelijke
+regel uit fase 1 weg is.
+
+```txt
+root@ubuntu-server:/# ping 10.10.20.1
+PING 10.10.20.1 (10.10.20.1) 56(84) bytes of data.
+^C
+--- 10.10.20.1 ping statistics ---
+12 packets transmitted, 0 received, 100% packet loss, time 11242ms
+```
+
+DC01 staat op 10.10.20.10 en pingt de gateway wel:
+
+```txt
+PS C:\Users\Administrator> Get-NetIPAddress -InterfaceAlias Ethernet0 -AddressFamily IPv4
+
+IPAddress         : 10.10.20.10
+InterfaceAlias    : Ethernet0
+PrefixLength      : 24
+PrefixOrigin      : Manual
+
+PS C:\Users\Administrator> ping 10.10.20.1
+Reply from 10.10.20.1: bytes=32 time=1ms TTL=64
+Reply from 10.10.20.1: bytes=32 time=1ms TTL=64
+Reply from 10.10.20.1: bytes=32 time=1ms TTL=64
+Reply from 10.10.20.1: bytes=32 time=2ms TTL=64
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+```
+
+DNS van DC01 via OPNsense, na het instellen van de DNS-server:
+
+```txt
+PS C:\Users\Administrator> Get-DnsClientServerAddress -AddressFamily IPv4
+InterfaceAlias               Interface Address ServerAddresses
+                             Index     Family
+--------------               --------- ------- ---------------
+Ethernet0                            6 IPv4    {10.10.20.1}
+
+PS C:\Users\Administrator> Resolve-DnsName google.com
+Name                                           Type   TTL   Section    IPAddress
+----                                           ----   ---   -------    ---------
+google.com                                     AAAA   186   Answer     2a00:1450:400e:808::200e
+google.com                                     A      186   Answer     142.251.209.238
+```
 
 ## Wat niet in één keer werkte
 
