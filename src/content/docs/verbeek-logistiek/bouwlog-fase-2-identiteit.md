@@ -97,6 +97,9 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 
 **DC01** (nog zonder AD DS)
 
+- Netwerkkaart `00:0C:29:B3:DF:2F` op LAN segment `VLAN-20`, achter Ethernet3 van de switch.
+  Op MAC-adres gecontroleerd. De test-VM hangt aan hetzelfde segment: in Workstation werkt
+  een LAN segment als een hub, dus meerdere VM's delen één switchpoort.
 - Vast adres 10.10.20.10/24 op `Ethernet0`.
 - DNS-server 10.10.20.1 (Unbound op OPNsense). Bij het aanmaken van de forest wordt dit de
   forwarder; daarna wijst DC01 naar zichzelf.
@@ -118,6 +121,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 28 okt 2026 | Getest. De test-VM (DHCP-adres, geen regel) pingt 10.10.20.1 niet meer; DC01 wel. |
 | 28 okt 2026 | `Resolve-DnsName google.com` op DC01 liep in een time-out. Met `-Server 10.10.20.1` kwam er wel antwoord, dus de firewall en Unbound werkten. `Get-DnsClientServerAddress` liet zien dat op `Ethernet0` geen DNS-server stond. 10.10.20.1 ingesteld; daarna werkt het. |
 | 28 okt 2026 | VMware Tools geïnstalleerd op DC01 en alle tijdsynchronisatie van VMware uitgezet in het `.vmx`-bestand. `w32tm /query /source` geeft `Local CMOS Clock`. |
+| 29 okt 2026 | Netwerkkaart van DC01 op MAC-adres gecontroleerd: `000c.29b3.df2f` staat op Ethernet3 in VLAN 20, gelijk aan het MAC-adres in Workstation. |
 
 ## Bewijs
 
@@ -165,6 +169,16 @@ Name                                           Type   TTL   Section    IPAddress
 ----                                           ----   ---   -------    ---------
 google.com                                     AAAA   186   Answer     2a00:1450:400e:808::200e
 google.com                                     A      186   Answer     142.251.209.238
+```
+
+De netwerkkaart van DC01 (`00:0C:29:B3:DF:2F` in Workstation) staat op Ethernet3 in VLAN 20,
+naast de test-VM:
+
+```txt
+Vlan    Mac Address       Type        Ports      Moves   Last Move
+----    -----------       ----        -----      -----   ---------
+  20    000c.29b3.df2f    DYNAMIC     Et3        1       0:15:20 ago
+  20    000c.29cb.bff4    DYNAMIC     Et3        1       0:15:49 ago
 ```
 
 Tijdsynchronisatie van VMware uit, in het `.vmx`-bestand van DC01:
