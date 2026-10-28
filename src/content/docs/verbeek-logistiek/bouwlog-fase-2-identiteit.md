@@ -13,10 +13,10 @@ afhankelijkheid van één server. Twee domain controllers voor `verbeek.internal
 OU-structuur met accounts en groepen, en Group Policy die aantoonbaar wordt toegepast.
 
 :::note[Stand van zaken]
-Fase 2 is begonnen. De ontwerpkeuzes staan vast (beslissing 3 t/m 8) en de firewallregels
-voor de DC's en de Windows-client zijn ontworpen. Nog niets is ingevoerd of getest. Nog te
-doen: de regels invoeren, DC01 en DC02 bouwen, VLAN 30 en 40 inrichten, accounts en Group
-Policy.
+Fase 2 is begonnen. De ontwerpkeuzes staan vast (beslissing 3 t/m 9) en de firewallregels
+voor de DC's en de Windows-client zijn ontworpen. De regels voor Servers staan in OPNsense,
+maar zijn nog niet getest: daarvoor moet DC01 er eerst zijn. Nog te doen: DC01 en DC02
+bouwen, VLAN 30 en 40 inrichten, de regels voor Clients invoeren, accounts en Group Policy.
 :::
 
 ## Ontwerp
@@ -35,7 +35,8 @@ Kort:
 
 ## Firewallregels
 
-**Ontwerp, nog niet ingevoerd.** Elke regel staat op het interface waar het verkeer
+De regels voor Servers zijn op 28 okt ingevoerd, nog niet getest. De regels voor Clients
+zijn nog alleen ontwerp. Elke regel staat op het interface waar het verkeer
 binnenkomt. OPNsense blokkeert alles waar geen pass-regel voor is, dus wat dicht moet
 blijven heeft geen eigen regel nodig; dat wordt met een negatieve test aangetoond.
 
@@ -76,12 +77,28 @@ geen regel voor nodig.
 
 ## Wat ik gebouwd heb
 
-Nog niets.
+**OPNsense: regels op Servers**
+
+| Bron | Protocol | Doel | Doelpoort | Description |
+|---|---|---|---|---|
+| 10.10.20.10 | TCP/UDP | 10.10.20.1 | domain (53) | DC01 -> fw01 DNS |
+| 10.10.20.20 | TCP/UDP | 10.10.20.1 | domain (53) | DC02 -> fw01 DNS |
+| 10.10.20.10 | UDP | 10.10.20.1 | ntp (123) | DC01 -> fw01 NTP |
+| 10.10.20.10 | TCP | `! Intern` | http (80) | DC01 -> WAN HTTP |
+| 10.10.20.20 | TCP | `! Intern` | http (80) | DC02 -> WAN HTTP |
+| 10.10.20.10 | TCP | `! Intern` | https (443) | DC01 -> WAN HTTPS |
+| 10.10.20.20 | TCP | `! Intern` | https (443) | DC02 -> WAN HTTPS |
+| 10.10.20.10 | ICMP | 10.10.20.1 | | DC01 -> fw01 ICMP |
+| 10.10.20.20 | ICMP | 10.10.20.1 | | DC02 -> fw01 ICMP |
+
+Alle regels: IPv4, richting `in`, bronpoort any.
 
 ## Logboek
 
 | Datum | Wat |
 |---|---|
+| 28 okt 2026 | Bij controle bleek dat de bronpoort ook ingevuld stond (`domain`, `ntp`, `http`, `https`). Een DC verstuurt vanaf een willekeurige hoge poort, dus die regels zouden nooit matchen. Bronpoort op any gezet; alleen de doelpoort is ingevuld. Twee regels stonden niet op richting `in`; gelijkgetrokken. |
+| 28 okt 2026 | Regels voor Servers ingevoerd in OPNsense, per DC een eigen regel: DNS en ICMP naar 10.10.20.1, NTP vanaf DC01, HTTP en HTTPS naar `! Intern`. Nog niet getest. |
 | 24 okt 2026 | Ontwerpkeuzes fase 2 vastgelegd als beslissing 3 t/m 8 (#13). |
 | 24 okt 2026 | Firewallregels voor de DC's en de Windows-client ontworpen (#14). Ontwerp, nog niet ingevoerd. |
 
