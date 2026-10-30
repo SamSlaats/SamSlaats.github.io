@@ -18,7 +18,9 @@ voor de DC's en de Windows-client zijn ontworpen. De regels voor Servers staan i
 zijn getest: DC01 bereikt de gateway en DNS via OPNsense, een machine zonder regel niet.
 De forest `verbeek.internal` staat op DC01, en DNS stuurt namen buiten het domein door naar
 OPNsense. DC01 haalt zijn tijd van OPNsense. Nog te doen op DC01: `dcdiag` opnieuw draaien
-(de eerste gaf twee fouten die waarschijnlijk tijdelijk zijn). Daarna DC02 bouwen, VLAN 30
+na 24 uur zonder herstart. De test SystemLog zal blijven falen zolang er events van de
+opstart in het logboek staan; zie [storing 5](/verbeek-logistiek/storingen/). Een
+waarschuwing van WinRM (10154) is nog niet verklaard. Daarna DC02 bouwen, VLAN 30
 en 40 inrichten, de regels voor Clients invoeren, accounts en Group Policy.
 :::
 
@@ -135,6 +137,9 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 29 okt 2026 | `Install-ADDSForest` gaf een fout op `-DomainMode Win22` en `-ForestMode Win22`: die waarde bestaat niet. De foutmelding noemt de geldige waarden; het hoogste is `WinThreshold` (Server 2016). Daarmee opnieuw uitgevoerd en DC01 gepromoveerd tot eerste DC van `verbeek.internal`. |
 | 29 okt 2026 | Root hints uitgezet op de DNS van DC01 en tijdbron ingesteld op 10.10.20.1. `w32tm /resync` meldde "no time data was available"; `w32tm /stripchart` naar 10.10.20.1 gaf wel antwoord met een afwijking van microseconden, dus NTP en de firewallregel werken. De tijdservice had nog geen meting gedaan. |
 | 29 okt 2026 | `dcdiag`: SystemLog en DFSREvent failed. In het systeemlog stond dat de tijdservice de klok 32394 seconden (ongeveer 9 uur) had verzet, en de tijden in de logs liepen 8 uur achter: de tijdzone stond op Pacific. Tijdzone naar `W. Europe Standard Time`. Beide fouten komen waarschijnlijk van de tijdsprong en het opzetten van SYSVOL; `dcdiag` wordt na 24 uur opnieuw gedraaid om dat te bevestigen. |
+| 30 okt 2026 | `dcdiag` faalt nog op SystemLog en DFSREvent. `dcdiag` kijkt naar de laatste 24 uur, dus oude fouten blijven meetellen. Events uit het systeemlog en DFS Replication bekeken: ze komen in twee groepen, gelijk met een opstart (29 okt 22:31 en 30 okt 21:27; `LastBootUpTime` 21:27:20). Zie het bewijs onder "Events na opstart" en [storing 5](/verbeek-logistiek/storingen/). |
+| 30 okt 2026 | DNS-server van DC01 antwoordt op `_ldap._tcp.dc._msdcs.verbeek.internal` (SRV naar `dc01`, 10.10.20.10). De 1014-events horen daarmee bij de opstartvolgorde: DC01 gebruikt zichzelf als DNS en die service is net na de start nog niet klaar. |
+| 30 okt 2026 | WinRM-waarschuwing 10154: de SPN `WSMAN/DC01` ontbreekt in `setspn -L DC01`. Na `Restart-Service WinRM` kwam de waarschuwing opnieuw, nu met foutcode 8344 in plaats van 1355. Oorzaak niet vastgesteld. `Test-WSMan DC01 -Authentication Kerberos` werkt lokaal. Bewust niet met `setspn` omzeild: een workaround verklaart niet waarom WinRM het zelf niet mag. Open punt. |
 
 ## Bewijs
 
@@ -249,6 +254,44 @@ time.synchronize.shrink = "FALSE"
 time.synchronize.tools.startup = "FALSE"
 ```
 
+### Events na opstart
+
+Systeemlog, laatste 24 uur (Id 1014 en 10154), en DFS Replication:
+
+```txt
+10/29/2026 10:31:44 PM  1014
+10/29/2026 10:31:44 PM  1014
+10/29/2026 10:32:06 PM 10154
+10/30/2026 9:27:42 PM   1014
+10/30/2026 9:27:43 PM   1014
+10/30/2026 9:28:04 PM  10154
+DFS Replication: 29 okt 10:32:24 PM  2212 en 2214 (zelfde seconde)
+```
+
+De berichten van de laatste groep:
+
+```txt
+1014  Name resolution for the name _ldap._tcp.dc._msdcs.verbeek.internal. timed out after none of the configured DNS servers responded.
+1014  Name resolution for the name wpad timed out after none of the configured DNS servers responded.
+10154 The WinRM service failed to create the following SPNs: WSMAN/DC01.verbeek.internal; WSMAN/DC01.  The error received was 1355
+```
+
+Daarna, zonder herstart, antwoordt de SRV-record wel:
+
+```txt
+_ldap._tcp.dc._msdcs.verbeek.internal   SRV   600   Answer   dc01.verbeek.internal   0 100 389
+```
+
+`setspn -L DC01` toont onder meer `HOST/DC01`, `ldap/DC01` en `DNS/DC01.verbeek.internal`,
+maar geen `WSMAN/...`. Na `Restart-Service WinRM` om 21:35:15 kwam 10154 opnieuw, met:
+
+```txt
+The error received was 8344
+```
+
+`Test-WSMan DC01 -Authentication Kerberos` geeft `OS: 10.0.20348` terug. Dit is een test
+van DC01 naar DC01; vanaf een andere machine is het nog niet getest.
+
 ## Wat niet in één keer werkte
 
-Nog niets.
+Zie [storingen](/verbeek-logistiek/storingen/): storing 5 hoort bij deze fase.

@@ -214,3 +214,45 @@ Dnsmasq gecontroleerd. Dat is dus een vermoeden, geen bewijs.
   zijn.
 - Bij de volgende wijziging aan Dnsmasq (DHCP voor Clients of DMZ) eerst testen zonder
   herstart, en als het niet werkt het log bekijken. Dan is de oorzaak alsnog te vinden.
+
+## 5. `dcdiag` faalt op SystemLog en DFSREvent; WinRM kan zijn SPN niet registreren
+
+**Datum.** 29 en 30 oktober 2026, fase 2. **Status: deels verklaard, 10154 open.**
+
+**Symptoom.** `dcdiag` op DC01 gaf SystemLog en DFSREvent als failed, en bleef dat doen
+na de correctie van de tijdzone en de tijdbron.
+
+**Aanpak.** `dcdiag` telt fouten en waarschuwingen uit de laatste 24 uur. Daarom zijn de
+events zelf bekeken met `Get-WinEvent` op het systeemlog en DFS Replication, en vergeleken
+met het tijdstip van de opstart (`LastBootUpTime`).
+
+- **1014** (DNS Client), twee keer per opstart, 20 tot 45 seconden na de start: de
+  SRV-record `_ldap._tcp.dc._msdcs.verbeek.internal` en `wpad` kregen geen antwoord. Later
+  op dezelfde dag antwoordt de SRV-record wel. Dit hoort bij de opstartvolgorde: DC01 is de
+  enige DNS-server van het domein en gebruikt zichzelf, en die service is vlak na de start
+  nog niet klaar.
+- **DFSR 2212 en 2214** één keer, bij de eerste opstart na de promotie, in dezelfde
+  seconde. Ze vallen na 24 uur uit het venster van `dcdiag`; of DFSREvent daarna slaagt,
+  is nog niet gezien.
+- **10154** (WinRM): `WSMAN/DC01` en `WSMAN/DC01.verbeek.internal` konden niet worden
+  aangemaakt. Bij opstart met foutcode 1355. Na `Restart-Service WinRM`, toen DNS en het
+  domein wel bereikbaar waren, kwam de waarschuwing terug met foutcode 8344. De SPN's
+  staan niet in `setspn -L DC01`. `Test-WSMan DC01 -Authentication Kerberos` werkt lokaal.
+
+**Oorzaak.** Voor 1014: de opstartvolgorde, op grond van de tijden en de SRV-test, maar
+niet door een tweede DNS-server uit te sluiten. Voor 10154 **niet vastgesteld**. De eerste
+verklaring (domein nog niet bereikbaar bij opstart) bleek niet de enige: na de herstart van
+WinRM is de foutcode een andere. Waarom WinRM de SPN niet mag schrijven, is niet onderzocht.
+
+**Besluit.** Bewust niet omzeild met `setspn`. Een handmatige SPN zou de waarschuwing
+wegnemen zonder te verklaren waarom WinRM het zelf niet kan, en zou in de log pas als
+workaround mogen staan. Het punt blijft open tot de oorzaak is onderzocht.
+
+**Les.**
+- `dcdiag` en zijn 24-uursvenster: een test die faalt na een correctie betekent niet dat
+  de correctie niet werkte. Eerst de tijdstempels van de events bekijken.
+- Een eerste verklaring (timing bij opstart) werd door een vervolgtest (andere foutcode na
+  herstart van de service) deels weerlegd. Een waarschuwing meer dan één keer testen voor
+  je de oorzaak noemt.
+- Nog te testen: of RSAT vanaf een andere machine met Kerberos op DC01 kan inloggen, en
+  of de DNS-volgorde bij DC02 (de ander eerst, zichzelf tweede) de 1014's vermindert.
