@@ -206,6 +206,10 @@ netwerk, en alleen OPNsense haalt tijd van buiten.
   allebei de klok bij.
 - Alleen DC01 krijgt een bron ingesteld; DC02 en de leden van het domein volgen de
   domeinhiërarchie.
+- Omdat VMware de klok niet bijstelt, loopt een DC na een suspend achter tot NTP hem
+  corrigeert. Op 30 oktober was dat 1,5 uur, ruim boven de 5 minuten van Kerberos (zie
+  [storing 6](/verbeek-logistiek/storingen/)). De VM's van dit lab worden daarom afgesloten,
+  niet gesuspend.
 
 ## 9. Windows Server 2022 voor de domain controllers
 

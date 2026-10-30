@@ -17,11 +17,11 @@ Fase 2 is begonnen. De ontwerpkeuzes staan vast (beslissing 3 t/m 9) en de firew
 voor de DC's en de Windows-client zijn ontworpen. De regels voor Servers staan in OPNsense en
 zijn getest: DC01 bereikt de gateway en DNS via OPNsense, een machine zonder regel niet.
 De forest `verbeek.internal` staat op DC01, en DNS stuurt namen buiten het domein door naar
-OPNsense. DC01 haalt zijn tijd van OPNsense. Nog te doen op DC01: `dcdiag` opnieuw draaien
-na 24 uur zonder herstart. De test SystemLog zal blijven falen zolang er events van de
-opstart in het logboek staan; zie [storing 5](/verbeek-logistiek/storingen/). Een
-waarschuwing van WinRM (10154) is nog niet verklaard. Daarna DC02 bouwen, VLAN 30
-en 40 inrichten, de regels voor Clients invoeren, accounts en Group Policy.
+OPNsense. DC01 haalt zijn tijd van OPNsense. `dcdiag` op DC01 slaagt op alle tests. Open
+op DC01: een waarschuwing van WinRM (10154) die niet verklaard is
+([storing 5](/verbeek-logistiek/storingen/)), en beheer met RSAT vanaf een andere machine
+is nog niet getest. Daarna DC02 bouwen, VLAN 30 en 40 inrichten, de regels voor Clients
+invoeren, accounts en Group Policy.
 :::
 
 ## Ontwerp
@@ -140,6 +140,8 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 30 okt 2026 | `dcdiag` faalt nog op SystemLog en DFSREvent. `dcdiag` kijkt naar de laatste 24 uur, dus oude fouten blijven meetellen. Events uit het systeemlog en DFS Replication bekeken: ze komen in twee groepen, gelijk met een opstart (29 okt 22:31 en 30 okt 21:27; `LastBootUpTime` 21:27:20). Zie het bewijs onder "Events na opstart" en [storing 5](/verbeek-logistiek/storingen/). |
 | 30 okt 2026 | DNS-server van DC01 antwoordt op `_ldap._tcp.dc._msdcs.verbeek.internal` (SRV naar `dc01`, 10.10.20.10). De 1014-events horen daarmee bij de opstartvolgorde: DC01 gebruikt zichzelf als DNS en die service is net na de start nog niet klaar. |
 | 30 okt 2026 | WinRM-waarschuwing 10154: de SPN `WSMAN/DC01` ontbreekt in `setspn -L DC01`. Na `Restart-Service WinRM` kwam de waarschuwing opnieuw, nu met foutcode 8344 in plaats van 1355. Oorzaak niet vastgesteld. `Test-WSMan DC01 -Authentication Kerberos` werkt lokaal. Bewust niet met `setspn` omzeild: een workaround verklaart niet waarom WinRM het zelf niet mag. Open punt. |
+| 30 okt 2026 | `dcdiag` opnieuw: geen enkele test faalt. SystemLog en DFSREvent slagen, ook met 1014 en 10154 in het venster: dat zijn waarschuwingen, en daar faalt de test niet op. Welk event de tests eerder liet falen, is niet vastgesteld; het viel inmiddels buiten het venster. In de uitvoer staat ook een waarschuwing van de tijdservice om 21:31:57, vier minuten na de opstart: peer 10.10.20.1 onbereikbaar na 8 pogingen. Niet verklaard. |
+| 30 okt 2026 | Na een suspend van de VM's liep DC01 1,5 uur achter (stripchart `+5455 s` naar OPNsense). `w32tm /resync` gaf "no time data was available"; om 23:31:09 heeft de tijdservice de klok zelf via NTP gecorrigeerd. Zie [storing 6](/verbeek-logistiek/storingen/). |
 
 ## Bewijs
 
@@ -292,6 +294,33 @@ The error received was 8344
 `Test-WSMan DC01 -Authentication Kerberos` geeft `OS: 10.0.20348` terug. Dit is een test
 van DC01 naar DC01; vanaf een andere machine is het nog niet getest.
 
+### dcdiag slaagt
+
+`dcdiag | Select-String "failed"` geeft alleen de tekst van het WinRM-event terug, geen
+`failed test`:
+
+```txt
+The WinRM service failed to create the following SPNs: WSMAN/DC01.verbeek.internal; WSMAN/DC01.
+The WinRM service failed to create the following SPNs: WSMAN/DC01.verbeek.internal; WSMAN/DC01.
+```
+
+### Klok na suspend
+
+```txt
+w32tm /stripchart /computer:10.10.20.1 /samples:3 /dataonly
+The current time is 10/30/2026 9:50:33 PM.
+21:50:33, +5455.1327262s
+```
+
+DC01 gaf 21:50 aan terwijl het ongeveer 23:20 was. Na de correctie door de tijdservice:
+
+```txt
+Last Successful Sync Time: 10/30/2026 11:31:09 PM
+Source: 10.10.20.1
+```
+
+De stripchart staat daarna op 0 en `Get-Date` loopt gelijk met de echte tijd.
+
 ## Wat niet in één keer werkte
 
-Zie [storingen](/verbeek-logistiek/storingen/): storing 5 hoort bij deze fase.
+Zie [storingen](/verbeek-logistiek/storingen/): storing 5 en 6 horen bij deze fase.

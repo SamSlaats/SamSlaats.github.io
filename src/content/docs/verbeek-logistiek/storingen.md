@@ -217,10 +217,10 @@ Dnsmasq gecontroleerd. Dat is dus een vermoeden, geen bewijs.
 
 ## 5. `dcdiag` faalt op SystemLog en DFSREvent; WinRM kan zijn SPN niet registreren
 
-**Datum.** 29 en 30 oktober 2026, fase 2. **Status: deels verklaard, 10154 open.**
+**Datum.** 29 en 30 oktober 2026, fase 2. **Status: `dcdiag` slaagt; 10154 open.**
 
 **Symptoom.** `dcdiag` op DC01 gaf SystemLog en DFSREvent als failed, en bleef dat doen
-na de correctie van de tijdzone en de tijdbron.
+na de correctie van de tijdzone en de tijdbron. Later op 30 oktober slaagden beide tests.
 
 **Aanpak.** `dcdiag` telt fouten en waarschuwingen uit de laatste 24 uur. Daarom zijn de
 events zelf bekeken met `Get-WinEvent` op het systeemlog en DFS Replication, en vergeleken
@@ -251,8 +251,35 @@ workaround mogen staan. Het punt blijft open tot de oorzaak is onderzocht.
 **Les.**
 - `dcdiag` en zijn 24-uursvenster: een test die faalt na een correctie betekent niet dat
   de correctie niet werkte. Eerst de tijdstempels van de events bekijken.
+- Niet elk event in het venster laat een test falen. Met 1014 en 10154 (waarschuwingen)
+  slaagde SystemLog gewoon. Welk event de test eerder liet falen, is niet bekeken voordat
+  het uit het venster viel: de volgende keer de uitvoer van de falende test zelf lezen.
 - Een eerste verklaring (timing bij opstart) werd door een vervolgtest (andere foutcode na
   herstart van de service) deels weerlegd. Een waarschuwing meer dan één keer testen voor
   je de oorzaak noemt.
 - Nog te testen: of RSAT vanaf een andere machine met Kerberos op DC01 kan inloggen, en
   of de DNS-volgorde bij DC02 (de ander eerst, zichzelf tweede) de 1014's vermindert.
+
+## 6. DC01 loopt 1,5 uur achter na een suspend
+
+**Datum.** 30 oktober 2026, fase 2. **Status: hersteld door NTP; voorkomen door afsluiten.**
+
+**Symptoom.** Na het hervatten van de gesuspende VM's gaf `w32tm /stripchart` naar
+10.10.20.1 een afwijking van `+5455 s`, en DC01 gaf 21:50 aan terwijl het rond 23:20 was.
+`w32tm /resync` meldde "The computer did not resync because no time data was available".
+
+**Aanpak.** Een afwijking zegt alleen dat de twee klokken verschillen, niet welke fout
+loopt. Eerst `Get-Date` vergeleken met de echte tijd, en opnieuw de stripchart: daarna liep
+DC01 gelijk en stond de afwijking op 0. `Last Successful Sync Time` was 23:31:09, na de
+mislukte `/resync`: de tijdservice had de klok zelf via NTP gecorrigeerd.
+
+**Oorzaak.** De VM's waren gesuspend. Tijdsynchronisatie van VMware staat uit op DC01
+(beslissing 8), dus de klok liep na het hervatten verder vanaf het moment van de suspend.
+Waarom `/resync` meteen na het hervatten geen tijdgegevens had, is niet vastgesteld.
+
+**Les.**
+- VM's van dit lab afsluiten, niet suspenden. Als er een tweede DC of een client is,
+  weigert Kerberos bij meer dan 5 minuten verschil; 1,5 uur is ruim daarboven.
+- Bij een afwijking eerst nagaan welke klok goed loopt, voordat je er een verklaring aan
+  hangt. Hier werd eerst aangenomen dat DC01 achterliep; dat klopte, maar het was niet
+  gecontroleerd.
