@@ -242,7 +242,21 @@ met het tijdstip van de opstart (`LastBootUpTime`).
 **Oorzaak.** Voor 1014: de opstartvolgorde, op grond van de tijden en de SRV-test, maar
 niet door een tweede DNS-server uit te sluiten. Voor 10154 **niet vastgesteld**. De eerste
 verklaring (domein nog niet bereikbaar bij opstart) bleek niet de enige: na de herstart van
-WinRM is de foutcode een andere. Waarom WinRM de SPN niet mag schrijven, is niet onderzocht.
+WinRM is de foutcode een andere.
+
+Onderzocht voor 8344 (onvoldoende rechten):
+- WinRM draait als `NT AUTHORITY\NetworkService`.
+- Op het object `CN=DC01` heeft `SELF` het recht *Validated write to service principal
+  name*.
+- `dNSHostName` is `DC01.verbeek.internal` en `sAMAccountName` is `DC01$`. De SPN's die WinRM
+  wil schrijven passen daarbij, dus een afwijkende hostnaam is uitgesloten.
+
+Hypothese, niet bewezen: `SELF` geldt alleen voor het account van het object zelf (`DC01$`).
+Op een lidserver meldt `NetworkService` zich via het netwerk bij een DC aan als het
+computeraccount, en dan geldt `SELF`. Op een DC is AD lokaal; als WinRM daar als
+`NetworkService` binnenkomt en niet als `DC01$`, geldt `SELF` niet. Toets bij DC02: staat
+`WSMAN/DC02` in `setspn -L DC02` zolang DC02 lidserver is, en verdwijnt dat of komt 10154
+terug na de promotie?
 
 **Besluit.** Bewust niet omzeild met `setspn`. Een handmatige SPN zou de waarschuwing
 wegnemen zonder te verklaren waarom WinRM het zelf niet kan, en zou in de log pas als
