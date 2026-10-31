@@ -143,6 +143,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 30 okt 2026 | `dcdiag` opnieuw: geen enkele test faalt. SystemLog en DFSREvent slagen, ook met 1014 en 10154 in het venster: dat zijn waarschuwingen, en daar faalt de test niet op. Welk event de tests eerder liet falen, is niet vastgesteld; het viel inmiddels buiten het venster. In de uitvoer staat ook een waarschuwing van de tijdservice om 21:31:57, vier minuten na de opstart: peer 10.10.20.1 onbereikbaar na 8 pogingen. Niet verklaard. |
 | 30 okt 2026 | Na een suspend van de VM's liep DC01 1,5 uur achter (stripchart `+5455 s` naar OPNsense). `w32tm /resync` gaf "no time data was available"; om 23:31:09 heeft de tijdservice de klok zelf via NTP gecorrigeerd. Zie [storing 6](/verbeek-logistiek/storingen/). |
 | 31 okt 2026 | SSH op OPNsense aangezet voor beheer vanaf de beheer-VM (vast adres 10.10.10.10): eigen gebruiker met sleutel, root en wachtwoord uit, alleen op Management, regel van 10.10.10.10 naar `This Firewall` TCP 22. Zie beslissing 10. |
+| 31 okt 2026 | OPNsense bleek geen tijd van buiten te krijgen (stratum 12, eigen klok); DC01 volgde op stratum 13. Oorzaak: de NAT van VMware laat antwoorden op bronpoort 123 vallen. Source NAT-regel op WAN die de bronpoort van het eigen NTP-verkeer herschrijft. Daarna OPNsense op stratum 2 en DC01 op stratum 3. Zie [storing 7](/verbeek-logistiek/storingen/). |
 
 ## Bewijs
 
@@ -303,6 +304,34 @@ van DC01 naar DC01; vanaf een andere machine is het nog niet getest.
 ```txt
 The WinRM service failed to create the following SPNs: WSMAN/DC01.verbeek.internal; WSMAN/DC01.
 The WinRM service failed to create the following SPNs: WSMAN/DC01.verbeek.internal; WSMAN/DC01.
+```
+
+### Tijd van buiten
+
+Vóór de NAT-regel: OPNsense alleen met pool-regels, geen bron. Test met een eigen script
+vanaf OPNsense naar 45.139.163.87 (ntpd gestopt):
+
+```txt
+bronpoort 34221        bronpoort 123
+1 antwoord             1 geen antwoord
+2 antwoord             2 geen antwoord
+3 antwoord             3 geen antwoord
+```
+
+Na de regel, `ntpq -pn` op OPNsense (uitsnede):
+
+```txt
+     remote           refid      st t when poll reach   delay   offset  jitter
+*185.80.247.36   .PPS0.           1 u   10   64   37   27.276   +4.048   2.762
++178.215.228.24  189.97.54.122    2 u   22   64   17   23.305   +1.388   5.772
++162.159.200.1   10.226.8.4       3 u   15   64   37   16.971   +1.532   5.633
+```
+
+En op DC01:
+
+```txt
+Stratum: 3 (secondary reference - syncd by (S)NTP)
+Source: 10.10.20.1
 ```
 
 ### Klok na suspend

@@ -297,3 +297,75 @@ Waarom `/resync` meteen na het hervatten geen tijdgegevens had, is niet vastgest
 - Bij een afwijking eerst nagaan welke klok goed loopt, voordat je er een verklaring aan
   hangt. Hier werd eerst aangenomen dat DC01 achterliep; dat klopte, maar het was niet
   gecontroleerd.
+
+## 7. OPNsense krijgt geen tijd van buiten
+
+**Datum.** 30 en 31 oktober 2026, fase 2. **Status: opgelost met een NAT-regel; oorzaak in
+VMware vastgesteld, mechanisme niet.**
+
+**Symptoom.** Een packet capture van NTP tussen DC01 en OPNsense liet zien dat OPNsense
+antwoordde met stratum 12 en Reference-ID 127.0.0.1: OPNsense gebruikte zijn eigen klok.
+`ntpq -pn` op OPNsense toonde alleen de vier pool-regels (stratum 16, reach 0), zonder één
+echte server eronder. DC01 volgde OPNsense op stratum 13. De klok van OPNsense liep
+4,5 tot 5 seconden voor; het domein liep mee, zonder dat iets dat liet zien.
+
+**Aanpak.** Stap voor stap de weg van OPNsense naar internet afgelopen, en per stap één
+hypothese getoetst:
+
+1. *DNS?* Nee: OPNsense vindt de pool-adressen, en het NTP-log toont ntpd die steeds
+   nieuwe servers aanspreekt ("Soliciting pool server").
+2. *Internet?* Nee: ping naar 1.1.1.1 zonder verlies.
+3. *Toestand van ntpd na de suspend?* Een herstart van ntpd veranderde niets.
+4. *Firewall van OPNsense?* Nee: `tcpdump -i pflog0` toonde alleen `pass out`, en
+   `tcpdump -i em1` toonde vragen naar buiten maar geen antwoorden binnen. Wat niet
+   aankomt, kan de firewall niet blokkeren.
+5. *VMware NAT na de suspend?* Een herstart van de VMware NAT Service veranderde niets.
+6. *Bronpoort?* Een klein Python-script stuurt drie NTP-vragen vanaf een gekozen
+   bronpoort. Van OPNsense naar 45.139.163.87, op hetzelfde moment, met ntpd even
+   gestopt: met een willekeurige bronpoort 3 van 3 antwoorden, met bronpoort 123
+   0 van 3. ntpd verstuurt altijd vanaf poort 123.
+7. *Router of provider?* Nee: hetzelfde script op de Windows-pc (buiten VMware), met de
+   tijdservice van Windows gestopt, kreeg ook op bronpoort 123 3 van 3 antwoorden.
+8. *Pakt de tijdservice van Windows op de pc de antwoorden af?* Nee: met die service
+   gestopt kreeg OPNsense op poort 123 nog steeds geen antwoord.
+
+Eerdere aannames die onderweg niet klopten: dat de suspend de oorzaak was, dat het eerste
+pakket van een nieuwe verbinding verloren gaat, en een test met `ntpdate -q` die een
+willekeurige poort bleek te gebruiken, ook zonder `-u`. Pas met het eigen script, waarin
+alleen de poort verschilde, was de vergelijking eerlijk.
+
+**Oorzaak.** De NAT van VMware Workstation laat antwoorden op verkeer met bronpoort 123
+vanuit OPNsense vallen. Vastgesteld door uitsluiting: OPNsense verstuurt, de pc krijgt
+op dezelfde poort wel antwoord, en daartussen zit alleen VMware. Waarom VMware dit doet,
+is niet vastgesteld. Ook niet verklaard: één server (84.27.101.81) antwoordde wel op
+poort 123, en rond het hervatten op 30 oktober gaf DC01 kort stratum 3.
+
+**Oplossing.** Source NAT-regel op OPNsense (modus Hybrid): interface WAN, UDP, bron
+`WAN address`, bestemmingspoort 123, vertalen naar `WAN address`, *Static-port* uit.
+OPNsense herschrijft daarmee de bronpoort van zijn eigen NTP-verkeer naar een
+willekeurige poort, zodat VMware geen poort 123 meer ziet.
+
+Daarna toonde `ntpq -pn` echte servers met oplopende reach (37, 17, 31) en een gekozen bron
+(`*185.80.247.36`, stratum 1, `.PPS0.`), met afwijkingen van enkele milliseconden. DC01
+ging van stratum 13 naar 3.
+
+**Les.**
+- Een hypothese toetsen met een test waarin maar één ding verschilt. Twee programma's
+  vergelijken (ntpd en ntpdate) leek een poorttest, maar was het niet.
+- Een capture kijkt vóór de firewall. Een pakket dat in de capture staat, is nog niet
+  door de firewall; een pakket dat er niet staat, is er nooit geweest.
+- "De klok lijkt goed" bewijst niets: OPNsense liep seconden voor, met een
+  nette tijd op het dashboard.
+- Bij NTP-problemen eerst `ntpq -pn` op OPNsense: staan er alleen pool-regels, dan heeft
+  OPNsense geen bron.
+
+**Nog open, gevonden tijdens dit onderzoek.**
+- DC01 vraagt OPNsense in symmetrische modus (`Mode 1`, vlag `0x0`) en geeft zich daarbij
+  uit als stratum 1 met zijn eigen klok als bron. Clientmodus (`0x8`) is een alternatief;
+  nog een keuze.
+- Een machine in het lab, vermoedelijk de Ubuntu-beheer-VM, haalt zelf tijd van een
+  server op internet (185.125.190.123, door OPNsense gerouteerd). Volgens beslissing 8
+  hoort alleen OPNsense dat te doen.
+- De waarschuwing op DC01 van 30 oktober 21:31:57 ("peer 10.10.20.1 unreachable") is
+  niet verklaard. OPNsense had op dat moment geen bron; of dat verband houdt, is niet
+  vastgesteld.

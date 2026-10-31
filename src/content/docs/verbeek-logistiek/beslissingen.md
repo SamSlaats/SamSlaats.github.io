@@ -210,6 +210,10 @@ netwerk, en alleen OPNsense haalt tijd van buiten.
   corrigeert. Op 30 oktober was dat 1,5 uur, ruim boven de 5 minuten van Kerberos (zie
   [storing 6](/verbeek-logistiek/storingen/)). De VM's van dit lab worden daarom afgesloten,
   niet gesuspend.
+- De NAT van VMware laat antwoorden op bronpoort 123 vallen. OPNsense krijgt alleen tijd van
+  buiten dankzij een Source NAT-regel die die bronpoort herschrijft
+  ([storing 7](/verbeek-logistiek/storingen/)). Verdwijnt die regel, dan valt OPNsense
+  terug op zijn eigen klok, en het hele domein met hem.
 
 ## 9. Windows Server 2022 voor de domain controllers
 
