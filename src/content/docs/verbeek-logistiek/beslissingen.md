@@ -125,6 +125,11 @@ de Windows-client: er hoeft geen extra machine bij, dus het geheugengebruik blij
   (#12), en er zijn regels nodig van Clients naar de DC's (#14).
 - Bouwen en accounts aanmaken gebeurt met PowerShell op de console; Group Policy pas als de
   Windows-client er is.
+- Beheerverkeer naar de DC's komt uit het VLAN van de werkplekken. Daarom mag WinRM (5985)
+  alleen vanaf de Windows-client met een vast adres, en niet van heel Clients: een nieuwe
+  werkplek in VLAN 30 krijgt zo niet vanzelf beheerrechten op de DC's.
+- Er zijn twee beheerplekken met elk een eigen taak: de beheer-VM in VLAN 10 voor OPNsense
+  en de switch (beslissing 10), de Windows-client in VLAN 30 voor de servers.
 
 ## 5. Vaste adressen voor de domain controllers
 

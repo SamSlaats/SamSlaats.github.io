@@ -71,7 +71,13 @@ geen regel voor nodig.
 | Clients | DC01 en DC02 | TCP 445 | SMB: SYSVOL en NETLOGON, waar de GPO's en aanmeldscripts staan |
 | Clients | DC01 en DC02 | TCP 135, TCP 49152-65535 | RPC: nodig voor de domain join en de RSAT-tools |
 | Clients | DC01 en DC02 | UDP 123 | NTP: clients in het domein halen de tijd van de DC's |
-| Clients | DC01 en DC02 | TCP 5985 | WinRM: beheer op afstand met PowerShell en Server Manager |
+| Windows-beheerclient (vast adres) | DC01 en DC02 | TCP 5985 | WinRM: beheer op afstand met PowerShell en Server Manager |
+
+De domeinpoorten mogen van heel Clients: elke werkplek heeft ze nodig om aan te melden en
+beleid op te halen. Beheer op afstand (WinRM) mag alleen vanaf de ene Windows-client die
+de servers beheert, met een vast adres. Zo krijgt een nieuwe werkplek in VLAN 30 niet
+vanzelf beheerrechten op de DC's. Dezelfde aanpak als SSH naar OPNsense, dat alleen vanaf
+de beheer-VM mag (beslissing 10).
 
 **Wat dicht moet blijven**
 
@@ -143,9 +149,11 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 30 okt 2026 | WinRM-waarschuwing 10154: de SPN `WSMAN/DC01` ontbreekt in `setspn -L DC01`. Na `Restart-Service WinRM` kwam de waarschuwing opnieuw, nu met foutcode 8344 in plaats van 1355. Oorzaak niet vastgesteld. `Test-WSMan DC01 -Authentication Kerberos` werkt lokaal. Bewust niet met `setspn` omzeild: een workaround verklaart niet waarom WinRM het zelf niet mag. Open punt. |
 | 30 okt 2026 | `dcdiag` opnieuw: geen enkele test faalt. SystemLog en DFSREvent slagen, ook met 1014 en 10154 in het venster: dat zijn waarschuwingen, en daar faalt de test niet op. Welk event de tests eerder liet falen, is niet vastgesteld; het viel inmiddels buiten het venster. In de uitvoer staat ook een waarschuwing van de tijdservice om 21:31:57, vier minuten na de opstart: peer 10.10.20.1 onbereikbaar na 8 pogingen. Niet verklaard. |
 | 30 okt 2026 | Na een suspend van de VM's liep DC01 1,5 uur achter (stripchart `+5455 s` naar OPNsense). `w32tm /resync` gaf "no time data was available"; om 23:31:09 heeft de tijdservice de klok zelf via NTP gecorrigeerd. Zie [storing 6](/verbeek-logistiek/storingen/). |
+| 31 okt 2026 | De beheer-VM bleek op DHCP te staan, niet op het vaste adres 10.10.10.20 uit fase 1. Hoe dat zo gekomen is, is niet vastgesteld. Vast adres 10.10.10.10 gegeven. |
 | 31 okt 2026 | SSH op OPNsense aangezet voor beheer vanaf de beheer-VM (vast adres 10.10.10.10): eigen gebruiker met sleutel, root en wachtwoord uit, alleen op Management, regel van 10.10.10.10 naar `This Firewall` TCP 22. Zie beslissing 10. |
 | 31 okt 2026 | OPNsense bleek geen tijd van buiten te krijgen (stratum 12, eigen klok); DC01 volgde op stratum 13. Oorzaak: de NAT van VMware laat antwoorden op bronpoort 123 vallen. Source NAT-regel op WAN die de bronpoort van het eigen NTP-verkeer herschrijft. Daarna OPNsense op stratum 2 en DC01 op stratum 3. Zie [storing 7](/verbeek-logistiek/storingen/). |
 | 31 okt 2026 | DC01 vroeg OPNsense in symmetrische modus (`Mode 1`), waarin tijd twee kanten op kan. Omgezet naar clientmodus (`10.10.20.1,0x8`). `w32tm /query /peers /verbose`: `Mode: 3 (Client)`, `State: Active`, peer op stratum 2; `w32tm /resync` slaagt; DC01 op stratum 3. |
+| 31 okt 2026 | Ontwerp regels voor Clients aangepast: WinRM (5985) naar de DC's alleen vanaf de Windows-beheerclient, niet van heel VLAN 30. |
 
 ## Bewijs
 
