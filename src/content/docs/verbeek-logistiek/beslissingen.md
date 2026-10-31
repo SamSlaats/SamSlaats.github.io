@@ -289,3 +289,27 @@ Getest: inloggen met de eigen gebruiker lukt; als root wordt geweigerd; met
 - Raakt de beheer-VM of zijn sleutel kwijt, dan blijft de VMware-console als terugweg.
 - Er is een poort meer open op de firewall, maar alleen vanaf één adres in het
   beheer-VLAN.
+
+## 11. Windows 11 Pro voor de Windows-beheerclient
+
+**Context**
+De Windows-client in VLAN 30 beheert de servers met RSAT (beslissing 4) en moet daarvoor
+lid van het domein zijn. Windows Home kan geen lid van een domein worden.
+
+**Opties**
+- *Windows 11 Enterprise, evaluatieversie.* Volledig te gebruiken, maar 90 dagen geldig.
+- *Windows 11 Pro.* Kan in een domein. Er is geen evaluatieversie van Pro en er is geen
+  sleutel; zonder sleutel draait Pro ongeactiveerd, met een watermerk en zonder
+  instellingen voor personalisatie.
+
+**Keuze**
+Windows 11 Pro, niet geactiveerd (labgebruik). De evaluatieversie van Enterprise verloopt
+na 90 dagen, en ik wil niet het risico lopen dat de client stopt voordat de casus af is.
+Een niet-geactiveerde Pro verloopt niet en kan lid worden van het domein.
+
+**Gevolgen**
+- Vast adres 10.10.30.10, buiten een latere DHCP-range van Clients. De WinRM-regel naar
+  de DC's hangt aan dat adres.
+- Zonder activatie zijn sommige instellingen van Windows niet beschikbaar; voor beheer
+  met RSAT maakt dat niet uit.
+- Voor een echte omgeving is een licentie nodig; dat geldt niet voor dit lab.

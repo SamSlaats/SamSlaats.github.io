@@ -71,13 +71,21 @@ geen regel voor nodig.
 | Clients | DC01 en DC02 | TCP 445 | SMB: SYSVOL en NETLOGON, waar de GPO's en aanmeldscripts staan |
 | Clients | DC01 en DC02 | TCP 135, TCP 49152-65535 | RPC: nodig voor de domain join en de RSAT-tools |
 | Clients | DC01 en DC02 | UDP 123 | NTP: clients in het domein halen de tijd van de DC's |
-| Windows-beheerclient (vast adres) | DC01 en DC02 | TCP 5985 | WinRM: beheer op afstand met PowerShell en Server Manager |
+| Windows-beheerclient (10.10.30.10) | DC01 en DC02 | TCP 5985 | WinRM: beheer op afstand met PowerShell en Server Manager |
+| Clients | `! intern` | TCP 80 | HTTP: Windows Update en internet |
+| Clients | `! intern` | TCP 443 | HTTPS: Windows Update (ook RSAT) en internet |
 
 De domeinpoorten mogen van heel Clients: elke werkplek heeft ze nodig om aan te melden en
 beleid op te halen. Beheer op afstand (WinRM) mag alleen vanaf de ene Windows-client die
 de servers beheert, met een vast adres. Zo krijgt een nieuwe werkplek in VLAN 30 niet
 vanzelf beheerrechten op de DC's. Dezelfde aanpak als SSH naar OPNsense, dat alleen vanaf
 de beheer-VM mag (beslissing 10).
+
+Werkplekken krijgen internet omdat ze het nodig hebben: Windows Update, de browser, en RSAT,
+dat Windows 11 als optionele functie van Windows Update haalt. Alleen 80 en 443, en met
+`! intern`, zodat deze regels geen weg naar binnen openen. De afscherming van het interne
+netwerk zit in de standaardblokkade en de specifieke regels naar de DC's; 445 en RPC naar
+de DC's blijven wel een weg die een aanvaller op een client zou proberen.
 
 **Wat dicht moet blijven**
 
@@ -154,6 +162,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 31 okt 2026 | OPNsense bleek geen tijd van buiten te krijgen (stratum 12, eigen klok); DC01 volgde op stratum 13. Oorzaak: de NAT van VMware laat antwoorden op bronpoort 123 vallen. Source NAT-regel op WAN die de bronpoort van het eigen NTP-verkeer herschrijft. Daarna OPNsense op stratum 2 en DC01 op stratum 3. Zie [storing 7](/verbeek-logistiek/storingen/). |
 | 31 okt 2026 | DC01 vroeg OPNsense in symmetrische modus (`Mode 1`), waarin tijd twee kanten op kan. Omgezet naar clientmodus (`10.10.20.1,0x8`). `w32tm /query /peers /verbose`: `Mode: 3 (Client)`, `State: Active`, peer op stratum 2; `w32tm /resync` slaagt; DC01 op stratum 3. |
 | 31 okt 2026 | Ontwerp regels voor Clients aangepast: WinRM (5985) naar de DC's alleen vanaf de Windows-beheerclient, niet van heel VLAN 30. |
+| 31 okt 2026 | Ontwerp regels voor Clients aangevuld: internet (TCP 80/443 naar `! intern`) voor heel Clients. Windows-beheerclient krijgt 10.10.30.10 en Windows 11 Pro (beslissing 11). |
 
 ## Bewijs
 
