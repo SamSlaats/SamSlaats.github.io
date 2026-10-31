@@ -109,9 +109,10 @@ Alle regels: IPv4, richting `in`, bronpoort any.
   `.vmx`-bestand, ook de eenmalige bij opstarten, hervatten en het terugzetten van een
   snapshot. Volgens beslissing 8 haalt DC01 zijn tijd alleen van OPNsense; VMware mag de
   klok niet tussendoor bijstellen.
-- Tijdbron 10.10.20.1 (OPNsense), ingesteld met `w32tm /config /manualpeerlist:10.10.20.1
-  /syncfromflags:manual /reliable:yes /update`. `/reliable:yes` maakt DC01 de betrouwbare
-  tijdbron van het domein.
+- Tijdbron 10.10.20.1 (OPNsense) in clientmodus, ingesteld met `w32tm /config
+  /manualpeerlist:"10.10.20.1,0x8" /syncfromflags:manual /reliable:yes /update`. `0x8`
+  betekent clientmodus: DC01 vraagt alleen, en biedt OPNsense geen tijd aan (beslissing 8).
+  `/reliable:yes` maakt DC01 de betrouwbare tijdbron van het domein.
 - Tijdzone `W. Europe Standard Time` (stond op Pacific, de standaard van de installatie).
 - Forest en domein `verbeek.internal` (NetBIOS `VERBEEK`), aangemaakt met
   `Install-ADDSForest`, met DNS-rol. DC01 is Global Catalog en heeft de FSMO-rollen.
@@ -144,6 +145,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 30 okt 2026 | Na een suspend van de VM's liep DC01 1,5 uur achter (stripchart `+5455 s` naar OPNsense). `w32tm /resync` gaf "no time data was available"; om 23:31:09 heeft de tijdservice de klok zelf via NTP gecorrigeerd. Zie [storing 6](/verbeek-logistiek/storingen/). |
 | 31 okt 2026 | SSH op OPNsense aangezet voor beheer vanaf de beheer-VM (vast adres 10.10.10.10): eigen gebruiker met sleutel, root en wachtwoord uit, alleen op Management, regel van 10.10.10.10 naar `This Firewall` TCP 22. Zie beslissing 10. |
 | 31 okt 2026 | OPNsense bleek geen tijd van buiten te krijgen (stratum 12, eigen klok); DC01 volgde op stratum 13. Oorzaak: de NAT van VMware laat antwoorden op bronpoort 123 vallen. Source NAT-regel op WAN die de bronpoort van het eigen NTP-verkeer herschrijft. Daarna OPNsense op stratum 2 en DC01 op stratum 3. Zie [storing 7](/verbeek-logistiek/storingen/). |
+| 31 okt 2026 | DC01 vroeg OPNsense in symmetrische modus (`Mode 1`), waarin tijd twee kanten op kan. Omgezet naar clientmodus (`10.10.20.1,0x8`). `w32tm /query /peers /verbose`: `Mode: 3 (Client)`, `State: Active`, peer op stratum 2; `w32tm /resync` slaagt; DC01 op stratum 3. |
 
 ## Bewijs
 

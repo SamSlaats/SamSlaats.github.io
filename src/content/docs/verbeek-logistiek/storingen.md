@@ -360,9 +360,8 @@ ging van stratum 13 naar 3.
   OPNsense geen bron.
 
 **Nog open, gevonden tijdens dit onderzoek.**
-- DC01 vraagt OPNsense in symmetrische modus (`Mode 1`, vlag `0x0`) en geeft zich daarbij
-  uit als stratum 1 met zijn eigen klok als bron. Clientmodus (`0x8`) is een alternatief;
-  nog een keuze.
+- ~~DC01 vraagt OPNsense in symmetrische modus.~~ Omgezet naar clientmodus (`0x8`), zie
+  beslissing 8.
 - Een machine in het lab, vermoedelijk de Ubuntu-beheer-VM, haalt zelf tijd van een
   server op internet (185.125.190.123, door OPNsense gerouteerd). Volgens beslissing 8
   hoort alleen OPNsense dat te doen.

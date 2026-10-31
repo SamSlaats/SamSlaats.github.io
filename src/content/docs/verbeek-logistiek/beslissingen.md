@@ -200,6 +200,12 @@ nodig.
 DC01 haalt tijd van OPNsense. Dat is beter beveiligd: er is één tijdbron voor het hele
 netwerk, en alleen OPNsense haalt tijd van buiten.
 
+DC01 vraagt OPNsense in clientmodus (`0x8`), niet in de symmetrische modus die Windows
+zonder vlag gebruikt. In de symmetrische modus biedt DC01 OPNsense ook zijn eigen tijd aan,
+en een NTP-server kiest de bron met het laagste stratum. Zonder eigen bron zou OPNsense zo
+de tijd van DC01 kunnen overnemen, die zijn tijd weer van OPNsense heeft: een kring zonder
+echte bron. Clientmodus houdt de keten in één richting: internet, OPNsense, DC01, domein.
+
 **Gevolgen**
 - Er is een regel nodig voor NTP (UDP 123) van DC01 naar OPNsense (#14).
 - Tijdsynchronisatie van VMware Tools moet uit op de DC's, anders stellen Workstation en NTP
