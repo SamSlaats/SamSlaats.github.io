@@ -233,3 +233,44 @@ Een latere fase kan de servers upgraden naar 2025, zodat ik daar ook ervaring me
   licentie: AD DS moet er dan eerst af.
 - Een upgrade naar 2025 gaat daarom het best met nieuwe DC's op 2025 in hetzelfde domein,
   de FSMO-rollen verhuizen en de oude DC's degraderen, en niet met een in-place upgrade.
+
+## 10. OPNsense beheren via SSH vanaf de beheer-VM
+
+**Context**
+OPNsense werd beheerd via de webinterface vanaf de beheer-VM, en via de console in VMware
+voor de shell. Bij het onderzoek naar NTP (storing 7) bleek dat lastig: in de console kun je
+niet plakken, en de webinterface laadt grote logbestanden traag. De beheer-VM was bedoeld
+als de plek van waaruit het lab beheerd wordt, maar voor de shell gebeurde dat niet.
+
+**Opties**
+- *Alleen de VMware-console voor de shell.* Geen extra open poort, maar je werkt buiten de
+  beheer-VM om, zonder kopiëren en plakken.
+- *SSH met root en een wachtwoord.* Snel ingericht, maar root is het bekendste account om
+  te raden, en een wachtwoord is te raden.
+- *SSH met een eigen account en een sleutel, alleen bereikbaar vanaf de beheer-VM.* Meer
+  werk om in te richten, maar er is geen wachtwoord om te raden en maar één machine mag
+  het proberen.
+
+**Keuze**
+SSH met een eigen account en een sleutel. De beheer-VM wordt daarmee ook echt de
+beheermachine, voor de webinterface én de shell. Dat is logischer dan half via de
+VMware-console werken.
+
+Ingericht:
+- Eigen gebruiker in de groep `admins`, met de publieke sleutel (`ed25519`) van de
+  beheer-VM. De privésleutel blijft op de beheer-VM.
+- Root login uit, inloggen met wachtwoord uit.
+- SSH luistert alleen op Management.
+- Firewallregel op Management: bron 10.10.10.10 (de beheer-VM, met een vast adres),
+  bestemming `This Firewall`, TCP 22.
+- `sudo` vraagt het wachtwoord van de gebruiker voor commando's die root nodig hebben.
+
+Getest: inloggen met de eigen gebruiker lukt; als root wordt geweigerd; met
+`-o PubkeyAuthentication=no` wordt geweigerd zonder om een wachtwoord te vragen.
+
+**Gevolgen**
+- De regel hangt aan het vaste adres van de beheer-VM. Krijgt die een ander adres, dan
+  werkt SSH niet meer; dat is de bedoeling.
+- Raakt de beheer-VM of zijn sleutel kwijt, dan blijft de VMware-console als terugweg.
+- Er is een poort meer open op de firewall, maar alleen vanaf één adres in het
+  beheer-VLAN.
