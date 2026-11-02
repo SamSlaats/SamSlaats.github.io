@@ -151,9 +151,9 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 
   | Workstation | MAC | vEOS | LAN segment | Gecontroleerd |
   |---|---|---|---|---|
-  | Network Adapter 1 | `00:0C:29:64:81:84` | Management1 | geen | fase 1 |
-  | Network Adapter 2 | `00:0C:29:64:81:8E` | Ethernet1 | `Trunk` | fase 1 |
-  | Network Adapter 3 | `00:0C:29:64:81:98` | Ethernet2 | `VLAN-10` | fase 1 |
+  | Network Adapter 1 | `00:0C:29:64:81:84` | Management1 | geen | 2 nov 2026 |
+  | Network Adapter 2 | `00:0C:29:64:81:8E` | Ethernet1 | `Trunk` | 2 nov 2026 |
+  | Network Adapter 3 | `00:0C:29:64:81:98` | Ethernet2 | `VLAN-10` | 2 nov 2026 |
   | Network Adapter 4 | `00:0C:29:64:81:A2` | Ethernet3 | `VLAN-20` | 2 nov 2026 |
   | Network Adapter 5 | `00:0C:29:64:81:AC` | Ethernet4 | `VLAN-30` | 2 nov 2026 |
 
