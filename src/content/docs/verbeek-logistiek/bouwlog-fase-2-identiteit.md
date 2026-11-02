@@ -146,6 +146,17 @@ Alle regels: IPv4, richting `in`, bronpoort any.
   `bia`-adres van Ethernet4 (`show interfaces Ethernet4`).
 - OPNsense, regel op Clients: ICMP van 10.10.30.10 naar 10.10.30.1 (`Beheer01 -> fw01
   ICMP`). Meteen specifiek, niet van heel Clients naar `This Firewall`.
+- Netwerkkaarten van de switch-VM, actuele stand. Na elke wijziging aan deze adapters de
+  hele tabel controleren, niet alleen de aangepaste adapter (storing 3 en 8).
+
+  | Workstation | MAC | vEOS | LAN segment | Gecontroleerd |
+  |---|---|---|---|---|
+  | Network Adapter 1 | `00:0C:29:64:81:84` | Management1 | geen | fase 1 |
+  | Network Adapter 2 | `00:0C:29:64:81:8E` | Ethernet1 | `Trunk` | fase 1 |
+  | Network Adapter 3 | `00:0C:29:64:81:98` | Ethernet2 | `VLAN-10` | fase 1 |
+  | Network Adapter 4 | `00:0C:29:64:81:A2` | Ethernet3 | `VLAN-20` | 2 nov 2026 |
+  | Network Adapter 5 | `00:0C:29:64:81:AC` | Ethernet4 | `VLAN-30` | 2 nov 2026 |
+
 - Beheer01: Windows 11 Pro (beslissing 11), netwerkkaart `00:0C:29:33:C6:C0` op segment
   `VLAN-30`, vast adres 10.10.30.10/24, gateway 10.10.30.1.
 
