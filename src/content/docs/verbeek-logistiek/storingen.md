@@ -368,3 +368,54 @@ ging van stratum 13 naar 3.
 - De waarschuwing op DC01 van 30 oktober 21:31:57 ("peer 10.10.20.1 unreachable") is
   niet verklaard. OPNsense had op dat moment geen bron; of dat verband houdt, is niet
   vastgesteld.
+
+## 8. Beheer01 niet in de MAC-tabel: Ethernet4 aan het verkeerde segment
+
+**Datum.** 2 november 2026, fase 2. **Status: opgelost.**
+
+**Symptoom.** Beheer01 (de Windows-beheerclient in VLAN 30) stond aan, maar
+`show mac address-table` toonde in VLAN 30 geen enkel adres: niet Beheer01, en ook niet
+OPNsense. Wel stond OPNsense (`000c.2986.a58c`) op Et1 in VLAN 10, 20 en 40. Dat is
+normaal: OPNsense stuurt vanaf één kaart over de trunk, en verschijnt daarom één keer per
+VLAN.
+
+**Aanpak.** Drie mogelijkheden: Beheer01 stuurt niets, de kaart van Beheer01 hangt aan het
+verkeerde segment, of het verkeer komt niet bij Ethernet4. Beheer01 stond aan, en Windows
+stuurt bij het opstarten uit zichzelf pakketten; het segment van Beheer01 was gecontroleerd.
+`show interfaces Ethernet4 counters` toonde wel binnenkomend verkeer. In VMware bleken twee
+adapters van de switch-VM aan segment `VLAN-20` te hangen: adapter 4 (Ethernet3) en
+adapter 5 (Ethernet4).
+
+**Oorzaak.** Adapter 5 van de switch-VM hing aan `VLAN-20`. Het verkeer dat Ethernet4
+binnenkreeg, kwam van dat segment (DC01 en de test-VM), niet van Beheer01. Sinds wanneer
+de adapter zo stond, is niet vastgesteld; na storing 3 was hij losgekoppeld.
+
+Zolang het zo stond, waren VLAN 20 en VLAN 30 via de virtuele bekabeling met elkaar
+verbonden, buiten de firewall om: verkeer van segment `VLAN-20` kwam binnen op Ethernet4
+en kwam daar in VLAN 30 terecht. In een echt netwerk is dat een gat in de segmentatie
+(eis 1).
+
+**Herstel.** Adapter 5 naar segment `VLAN-30`. Daarna:
+
+```txt
+sw01#show mac address-table vlan 30
+  30    000c.2933.c6c0    DYNAMIC     Et4
+  30    000c.2986.a58c    DYNAMIC     Et1
+sw01#show mac address-table vlan 20
+  20    000c.2986.a58c    DYNAMIC     Et1
+  20    000c.29b3.df2f    DYNAMIC     Et3
+```
+
+Beheer01 op Et4 in VLAN 30 (gelijk aan het MAC-adres in VMware), DC01 alleen nog op Et3.
+Ping van Beheer01 naar 10.10.30.1 lukt.
+
+**Les.**
+- Dit is de derde keer dat de virtuele bekabeling van de switch-VM niet klopte (zie ook
+  storing 3). Na elke wijziging aan de adapters van de switch-VM de hele tabel
+  controleren (adapter, MAC-adres, Et-poort, segment), niet alleen de adapter die je
+  aanpaste.
+- Tellers van een poort tellen op sinds de poort aanging. Een hoog getal zegt dat er ooit
+  iets binnenkwam, niet wanneer of van wie. Voor een test eerst `clear counters`.
+- Een lege MAC-tabel in een VLAN zegt meer dan een volle: als zelfs OPNsense er niet in
+  staat, gaat er niets door dat VLAN.
+

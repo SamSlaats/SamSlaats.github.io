@@ -136,6 +136,19 @@ Alle regels: IPv4, richting `in`, bronpoort any.
   promotie. Root hints uit (`Set-DnsServerForwarder -UseRootHint $false`): als OPNsense niet
   antwoordt, gaat de DC niet zelf naar internet. Zo loopt alle DNS via één punt (beslissing 6).
 
+**VLAN 30: switch, OPNsense en Beheer01** (#12, stap 1 t/m 6)
+
+- Ethernet4: `switchport access vlan 30`, description `clients interface`, weer aangezet,
+  opgeslagen met `write memory`. In VMware hangen alle VM's van VLAN 30 via segment
+  `VLAN-30` aan deze ene poort; daarom is de description naar het VLAN genoemd, niet naar
+  een machine.
+- Adapter 5 van de switch-VM hoort bij Ethernet4: het MAC-adres in VMware is gelijk aan het
+  `bia`-adres van Ethernet4 (`show interfaces Ethernet4`).
+- OPNsense, regel op Clients: ICMP van 10.10.30.10 naar 10.10.30.1 (`Beheer01 -> fw01
+  ICMP`). Meteen specifiek, niet van heel Clients naar `This Firewall`.
+- Beheer01: Windows 11 Pro (beslissing 11), netwerkkaart `00:0C:29:33:C6:C0` op segment
+  `VLAN-30`, vast adres 10.10.30.10/24, gateway 10.10.30.1.
+
 ## Logboek
 
 | Datum | Wat |
@@ -163,6 +176,9 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 31 okt 2026 | DC01 vroeg OPNsense in symmetrische modus (`Mode 1`), waarin tijd twee kanten op kan. Omgezet naar clientmodus (`10.10.20.1,0x8`). `w32tm /query /peers /verbose`: `Mode: 3 (Client)`, `State: Active`, peer op stratum 2; `w32tm /resync` slaagt; DC01 op stratum 3. |
 | 31 okt 2026 | Ontwerp regels voor Clients aangepast: WinRM (5985) naar de DC's alleen vanaf de Windows-beheerclient, niet van heel VLAN 30. |
 | 31 okt 2026 | Ontwerp regels voor Clients aangevuld: internet (TCP 80/443 naar `! intern`) voor heel Clients. Windows-beheerclient krijgt 10.10.30.10 en Windows 11 Pro (beslissing 11). |
+| 31 okt 2026 | Pingregel op Clients van 10.10.30.10 naar 10.10.30.1. Ethernet4 in VLAN 30 gezet en aangezet. Dat ging in de gewone configuratiemodus, niet met een config session met `commit timer` zoals in fase 1: weinig risico, want er hing niets aan, maar wel een andere werkwijze. Daarna `write memory`. |
+| 2 nov 2026 | Beheer01 aangemaakt. Op de switch stond in VLAN 30 geen enkel MAC-adres, terwijl Ethernet4 wel verkeer ontving. Adapter 5 van de switch-VM (Ethernet4) hing aan segment `VLAN-20` in plaats van `VLAN-30`. Omgezet. Zie [storing 8](/verbeek-logistiek/storingen/). |
+| 2 nov 2026 | MAC-tabel: in VLAN 30 Beheer01 (`000c.2933.c6c0`) op Et4 en OPNsense op Et1; in VLAN 20 DC01 alleen op Et3. Ping van Beheer01 naar 10.10.30.1 lukt. Stap 1 t/m 6 van #12 af. |
 
 ## Bewijs
 
