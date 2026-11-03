@@ -159,6 +159,18 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 
 - Beheer01: Windows 11 Pro (beslissing 11), netwerkkaart `00:0C:29:33:C6:C0` op segment
   `VLAN-30`, vast adres 10.10.30.10/24, gateway 10.10.30.1.
+- Beheer01: DNS-server 10.10.20.10 (DC01), volgens beslissing 6. Zonder de DNS van de DC
+  vindt Beheer01 de SRV-record van het domein niet, en lukt de domain join niet.
+- OPNsense, aliassen: `DCs` (10.10.20.10, 10.10.20.20), `AD_TCP` (88, 53, 389, 445, 135,
+  49152:65535), `AD_UDP` (88, 53, 389, 123), `Web` (80, 443). Gekozen om de regels
+  overzichtelijk te houden; een poort die bij een alias komt, staat wel meteen open in elke
+  regel die die alias gebruikt.
+- OPNsense, regels op Clients (IPv4, in, bronpoort any): Clients net → `DCs` op `AD_TCP` en
+  `AD_UDP`; 10.10.30.10 → `DCs` TCP 5985; Clients net → `! Intern` op `Web`.
+- DC01: registerwaarde `AlwaysExpectDomainController` = 1 (DWORD) in
+  `HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters`, zodat DC01 bij het opstarten
+  zijn domeinprofiel blijft zoeken in plaats van op Public te blijven
+  ([storing 9](/verbeek-logistiek/storingen/)).
 
 ## Logboek
 
@@ -190,6 +202,9 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 31 okt 2026 | Pingregel op Clients van 10.10.30.10 naar 10.10.30.1. Ethernet4 in VLAN 30 gezet en aangezet. Dat ging in de gewone configuratiemodus, niet met een config session met `commit timer` zoals in fase 1: weinig risico, want er hing niets aan, maar wel een andere werkwijze. Daarna `write memory`. |
 | 2 nov 2026 | Beheer01 aangemaakt. Op de switch stond in VLAN 30 geen enkel MAC-adres, terwijl Ethernet4 wel verkeer ontving. Adapter 5 van de switch-VM (Ethernet4) hing aan segment `VLAN-20` in plaats van `VLAN-30`. Omgezet. Zie [storing 8](/verbeek-logistiek/storingen/). |
 | 2 nov 2026 | MAC-tabel: in VLAN 30 Beheer01 (`000c.2933.c6c0`) op Et4 en OPNsense op Et1; in VLAN 20 DC01 alleen op Et3. Ping van Beheer01 naar 10.10.30.1 lukt. Stap 1 t/m 6 van #12 af. |
+| 4 nov 2026 | Regels voor Clients ingevoerd met aliassen; DNS van Beheer01 op 10.10.20.10. DNS (domein en internet), 389, 88, 445 naar DC01 en 443 naar internet slagen; 5985 (WinRM) niet. |
+| 4 nov 2026 | 5985: `tcpdump` op OPNsense (VLAN 20) toont de SYN van Beheer01 naar DC01, zonder antwoord. OPNsense laat het dus door; DC01 gooit het weg. DC01 stond op netwerkprofiel Public, waar de WinRM-regel alleen het eigen subnet toelaat. Na `Restart-NetAdapter`: `DomainAuthenticated`, en 5985 slaagt. Zie [storing 9](/verbeek-logistiek/storingen/). |
+| 4 nov 2026 | Blijvende oplossing: `AlwaysExpectDomainController` = 1 op DC01. Na een herstart `DomainAuthenticated`, en 5985 vanaf Beheer01 slaagt. Stap 7 van #12 af. |
 
 ## Bewijs
 
@@ -378,6 +393,46 @@ En op DC01:
 ```txt
 Stratum: 3 (secondary reference - syncd by (S)NTP)
 Source: 10.10.20.1
+```
+
+### Regels voor Clients
+
+Vanaf Beheer01 (10.10.30.10), met DNS 10.10.20.10:
+
+```txt
+Resolve-DnsName verbeek.internal   →  A  10.10.20.10
+Resolve-DnsName google.com         →  A  172.217.171.110, AAAA 2a00:1450:400e:80b::200e
+Test-NetConnection 10.10.20.10 -Port 389            TcpTestSucceeded : True
+Test-NetConnection 10.10.20.10 -Port 88             TcpTestSucceeded : True
+Test-NetConnection 10.10.20.10 -Port 445            TcpTestSucceeded : True
+Test-NetConnection www.microsoft.com -Port 443      TcpTestSucceeded : True
+```
+
+5985 eerst niet. Op OPNsense, interface VLAN 20, alleen herhaalde SYN's zonder antwoord:
+
+```txt
+10.10.30.10.57892 > 10.10.20.10.5985: Flags [S], seq 2634237908, ...
+10.10.30.10.57892 > 10.10.20.10.5985: Flags [S], seq 2634237908, ...
+```
+
+Op DC01:
+
+```txt
+NetworkCategory : Public
+
+DisplayName                          Enabled Profile          Direction
+Windows Remote Management (HTTP-In)  True    Domain, Private  Inbound
+Windows Remote Management (HTTP-In)  True    Public           Inbound
+RemoteAddress: LocalSubnet / Any
+```
+
+Na de registerwaarde en een herstart van DC01:
+
+```txt
+Name            : verbeek.internal
+NetworkCategory : DomainAuthenticated
+
+Test-NetConnection 10.10.20.10 -Port 5985           TcpTestSucceeded : True
 ```
 
 ### Klok na suspend

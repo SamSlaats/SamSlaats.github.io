@@ -419,3 +419,63 @@ Ping van Beheer01 naar 10.10.30.1 lukt.
 - Een lege MAC-tabel in een VLAN zegt meer dan een volle: als zelfs OPNsense er niet in
   staat, gaat er niets door dat VLAN.
 
+## 9. WinRM van Beheer01 naar DC01 geweigerd: DC01 op netwerkprofiel Public
+
+**Datum.** 4 november 2026, fase 2. **Status: opgelost; blijvende oplossing deels nog bij
+DC02.**
+
+**Symptoom.** Vanaf Beheer01 slaagden DNS, 389, 88 en 445 naar DC01, maar
+`Test-NetConnection 10.10.20.10 -Port 5985` niet. De regel op OPNsense (10.10.30.10 →
+`DCs`, TCP 5985) zag er goed uit.
+
+**Aanpak.** Er zitten twee firewalls tussen Beheer01 en WinRM: OPNsense en de Windows
+Firewall op DC01. Met `tcpdump` op OPNsense, interface VLAN 20, tijdens de test: de SYN van
+Beheer01 kwam aan in VLAN 20, steeds hetzelfde volgnummer (herhalingen), en er kwam niets
+terug, ook geen reset. OPNsense liet het dus door, en DC01 gooide het stil weg.
+
+Op DC01 gaf `Get-NetConnectionProfile` het profiel **Public**. Een domeincontroller hoort
+zijn netwerk als `DomainAuthenticated` te herkennen. Op het Public-profiel staat de
+ingebouwde regel *Windows Remote Management (HTTP-In)* volgens de uitvoer op
+`LocalSubnet`; Beheer01 zit in een ander subnet. (De koppeling van regel en adresfilter is
+afgeleid uit de volgorde van twee commando's, niet apart gecontroleerd.)
+
+`Restart-Service NlaSvc` lukte niet: een afhankelijke service (`netprofm`) liet zich niet
+stoppen. `Restart-NetAdapter -Name Ethernet0` wel: daarna `DomainAuthenticated`, en 5985
+slaagde.
+
+**Oorzaak.** DC01 kreeg bij het opstarten het profiel Public. Volgens de bronnen start
+Network Location Awareness (NLA) voordat AD en de DNS-server klaar zijn; DC01 gebruikt
+zichzelf als DNS en vindt het domein dan niet. Dat past bij de 1014-events bij het
+opstarten (storing 5), maar is voor DC01 niet apart aangetoond.
+
+**Afweging.** De snelle oplossing was de WinRM-regel van het Public-profiel openzetten
+voor 10.10.30.10. Niet gedaan: de fout zat niet in de regel, maar in het profiel. Met één
+aangepaste regel blijven alle andere regels volgens het verkeerde profiel werken, en worden
+regels voor onbetrouwbare netwerken verzwakt om een fout te maskeren.
+
+Opties voor een blijvende oplossing:
+- A. Registerwaarde `AlwaysExpectDomainController` = 1 (NLA blijft het domein zoeken).
+- B. NlaSvc vertraagd laten starten.
+- C. Met twee DC's: elke DC de andere als eerste DNS, zichzelf als tweede.
+- D. Een taak die bij het opstarten de netwerkkaart herstart (workaround).
+
+Gekozen: A nu, omdat er nog maar één DC is; C bij DC02 (#16), omdat het doel twee DC's is
+en dat de oorzaak (DNS bij het opstarten) aanpakt.
+
+**Herstel.** `AlwaysExpectDomainController` = 1 (DWORD) in
+`HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters`. Na een herstart van DC01:
+`DomainAuthenticated`, en 5985 vanaf Beheer01 slaagt. Dat is één herstart; of DC01
+daarvoor bij elke herstart op Public kwam, is niet bekeken.
+
+**Les.**
+- Bij een geweigerde verbinding eerst bepalen welke firewall het is. Een capture op de
+  plek ertussen laat dat zien: komt het pakket aan en komt er niets terug, dan ligt het bij
+  de bestemming.
+- Stilte (geen reset) wijst op een firewall die het pakket weggooit; een reset wijst op
+  een poort waar niets luistert.
+- Een fout in het profiel niet oplossen met een uitzondering in de regels.
+
+**Bronnen.**
+- [WOSHub: Wrong network profile on Windows Server after reboot](https://woshub.com/wrong-network-profile-windows-server-reboot)
+- [Dell: Windows Firewall reset to Public after a reboot](https://www.dell.com/support/kbdoc/en-ge/000207835/wrong-windows-firewall-selected)
+
