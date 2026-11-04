@@ -167,6 +167,9 @@ Alle regels: IPv4, richting `in`, bronpoort any.
   regel die die alias gebruikt.
 - OPNsense, regels op Clients (IPv4, in, bronpoort any): Clients net → `DCs` op `AD_TCP` en
   `AD_UDP`; 10.10.30.10 → `DCs` TCP 5985; Clients net → `! Intern` op `Web`.
+- Beheer01: lid van `verbeek.internal`, computeraccount in `CN=Computers` (verplaatsen naar
+  een eigen OU in #17). Join gedaan met `VERBEEK\Administrator`, als bewuste keuze; een apart
+  account voor domain joins volgt in #17.
 - DC01: registerwaarde `AlwaysExpectDomainController` = 1 (DWORD) in
   `HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters`, zodat DC01 bij het opstarten
   zijn domeinprofiel blijft zoeken in plaats van op Public te blijven
@@ -207,6 +210,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 4 nov 2026 | Blijvende oplossing: `AlwaysExpectDomainController` = 1 op DC01. Na een herstart `DomainAuthenticated`, en 5985 vanaf Beheer01 slaagt. Stap 7 van #12 af. |
 | 4 nov 2026 | Stap 8, controles vooraf op Beheer01: `nltest /dsgetdc:verbeek.internal` vindt DC01 (flags o.a. `PDC`, `KDC`, `GTIMESERV`); stripchart naar DC01 −2,25 s. De tijdzone van Beheer01 stond op Pacific, net als bij DC01. |
 | 4 nov 2026 | Eerste `Add-Computer` gaf "Access is denied": PowerShell draaide niet als administrator. Tweede poging (als administrator, met `VERBEEK\Administrator` als bewuste keuze; een apart join-account volgt in #17) gelukt: account `BEHEER01` aangemaakt om 01:03:29 in `CN=Computers`. Inloggen als `VERBEEK\Administrator` na de herstart mislukt. Zie [storing 10](/verbeek-logistiek/storingen/). |
+| 5 nov 2026 | Logboeken bij een inlogpoging: Kerberos voor `BEHEER01$` werkt, RPC niet ("The RPC server is unavailable"). In de alias `AD_TCP` stond 134 in plaats van 135. Aangepast. Na een herstart van Beheer01: inloggen als `VERBEEK\Administrator` lukt, `nltest /sc_verify` geeft `NERR_Success`, tijdbron `DC01.verbeek.internal`. `slmgr /xpr`: Professional edition, "Notification mode" (niet geactiveerd), dus de join werkt op een niet-geactiveerde Pro (beslissing 11). Stap 8 van #12 af. |
 
 ## Bewijs
 

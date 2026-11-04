@@ -481,25 +481,55 @@ daarvoor bij elke herstart op Public kwam, is niet bekeken.
 
 ## 10. Inloggen op Beheer01 met een domeinaccount mislukt na de domain join
 
-**Datum.** 4 november 2026, fase 2. **Status: open.**
+**Datum.** 4 en 5 november 2026, fase 2. **Status: opgelost.**
 
 **Symptoom.** Na de domain join en de herstart startte Beheer01 erg langzaam op. Inloggen
-als `VERBEEK\Administrator` (en `verbeek\Administrator`) gaf: *"The security database on
-the server does not have a computer account for this workstation trust relationship."*
-Een tweede poging later gaf dezelfde melding.
+als `VERBEEK\Administrator` gaf: *"The security database on the server does not have a
+computer account for this workstation trust relationship."* Ook bij latere pogingen.
 
-**Wat vaststaat.**
-- Op DC01 bestaat het computeraccount `BEHEER01`, `Enabled`, in `CN=Computers`,
-  aangemaakt om 01:03:29: bij de tweede, geslaagde join. De eerste poging (zonder
-  administratorrechten, "Access is denied") heeft geen account achtergelaten.
-- Op Beheer01, ingelogd met het lokale account: `PartOfDomain : True`, domein
-  `verbeek.internal`, en `Test-ComputerSecureChannel` geeft `True` ("in good condition").
-- Het NETLOGON-event 5782 op DC01 om 00:31 ("No DNS servers configured") hoort bij het
-  herstarten van de netwerkkaart van DC01 (storing 9), niet bij deze join.
+**Wat eerst vaststond.**
+- Op DC01 bestond het computeraccount `BEHEER01`, `Enabled`, in `CN=Computers`, aangemaakt
+  om 01:03:29: bij de tweede, geslaagde join. De eerste poging (zonder
+  administratorrechten, "Access is denied") liet geen account achter.
+- Op Beheer01, ingelogd met het lokale account: `PartOfDomain : True`, en op 4 november gaf
+  `Test-ComputerSecureChannel` `True` ("in good condition").
 
-**Oorzaak.** Niet vastgesteld. De vertrouwensrelatie lijkt in orde volgens beide kanten,
-en toch mislukt het inloggen met een domeinaccount.
+**Aanpak.** Een inlogpoging gedaan en direct daarna de logboeken aan beide kanten bekeken.
 
-**Volgende stap.** De logboeken op beide machines rond het moment van inloggen bekijken
-(Beheer01: System en NETLOGON; DC01: Security), voordat er iets hersteld wordt.
+- DC01, Security: 4768 voor `BEHEER01$` met `Result Code: 0x0`. Kerberos voor het
+  computeraccount werkte. Geen 4768 voor `Administrator`: de inlogpoging kwam niet zo ver.
+- Beheer01, Security: 4625 met status `0xC000018B`, de code achter de foutmelding.
+- Beheer01, System: 5719 (geen secure session met de DC), 5788 en 5789 (SPN en DNS-naam
+  in AD bijwerken mislukt: *"The RPC server is unavailable"*), 1055 (Group Policy).
 
+Het patroon: DNS, Kerberos, LDAP en SMB werkten, alles via RPC niet. RPC begint op
+poort 135 (endpoint mapper) en gaat daarna naar een hoge poort. Bij de tests van stap 7
+waren 389, 88, 445 en 5985 getest, maar 135 en de hoge poorten niet.
+
+**Oorzaak.** In de alias `AD_TCP` op OPNsense stond **134** in plaats van **135**. RPC van
+Clients naar de DC's werd daardoor geblokkeerd, en daarmee de secure session, het
+bijwerken van AD en Group Policy. Niet verklaard: waarom `Test-ComputerSecureChannel` op
+4 november toch `True` gaf.
+
+**Herstel.** `AD_TCP` aangepast naar 135. Na een herstart van Beheer01:
+
+```txt
+C:\Users\Administrator>whoami
+verbeek\administrator
+
+C:\Users\Administrator>nltest /sc_verify:verbeek.internal
+Trusted DC Name \\DC01.verbeek.internal
+Trusted DC Connection Status Status = 0 0x0 NERR_Success
+Trust Verification Status = 0 0x0 NERR_Success
+
+C:\Users\Administrator>w32tm /query /source
+DC01.verbeek.internal
+```
+
+**Les.**
+- Een alias poort voor poort testen. Bij stap 7 bleven juist de twee niet-geteste poorten
+  het probleem.
+- De foutmelding wees naar het computeraccount, maar de oorzaak zat in het netwerk. De
+  logboeken aan beide kanten lieten zien wat wel en niet werkte; daaruit volgde de poort.
+- Voor de hoge RPC-poorten volstaat een test op een willekeurige poort niet: op DC01
+  luistert niet op elke poort iets. Nog uit te zoeken hoe dat wel te testen is.
