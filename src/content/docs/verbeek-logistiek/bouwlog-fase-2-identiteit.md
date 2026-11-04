@@ -205,6 +205,8 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 4 nov 2026 | Regels voor Clients ingevoerd met aliassen; DNS van Beheer01 op 10.10.20.10. DNS (domein en internet), 389, 88, 445 naar DC01 en 443 naar internet slagen; 5985 (WinRM) niet. |
 | 4 nov 2026 | 5985: `tcpdump` op OPNsense (VLAN 20) toont de SYN van Beheer01 naar DC01, zonder antwoord. OPNsense laat het dus door; DC01 gooit het weg. DC01 stond op netwerkprofiel Public, waar de WinRM-regel alleen het eigen subnet toelaat. Na `Restart-NetAdapter`: `DomainAuthenticated`, en 5985 slaagt. Zie [storing 9](/verbeek-logistiek/storingen/). |
 | 4 nov 2026 | Blijvende oplossing: `AlwaysExpectDomainController` = 1 op DC01. Na een herstart `DomainAuthenticated`, en 5985 vanaf Beheer01 slaagt. Stap 7 van #12 af. |
+| 4 nov 2026 | Stap 8, controles vooraf op Beheer01: `nltest /dsgetdc:verbeek.internal` vindt DC01 (flags o.a. `PDC`, `KDC`, `GTIMESERV`); stripchart naar DC01 −2,25 s. De tijdzone van Beheer01 stond op Pacific, net als bij DC01. |
+| 4 nov 2026 | Eerste `Add-Computer` gaf "Access is denied": PowerShell draaide niet als administrator. Tweede poging (als administrator, met `VERBEEK\Administrator` als bewuste keuze; een apart join-account volgt in #17) gelukt: account `BEHEER01` aangemaakt om 01:03:29 in `CN=Computers`. Inloggen als `VERBEEK\Administrator` na de herstart mislukt. Zie [storing 10](/verbeek-logistiek/storingen/). |
 
 ## Bewijs
 

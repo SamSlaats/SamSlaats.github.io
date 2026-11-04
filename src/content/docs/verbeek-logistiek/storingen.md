@@ -479,3 +479,27 @@ daarvoor bij elke herstart op Public kwam, is niet bekeken.
 - [WOSHub: Wrong network profile on Windows Server after reboot](https://woshub.com/wrong-network-profile-windows-server-reboot)
 - [Dell: Windows Firewall reset to Public after a reboot](https://www.dell.com/support/kbdoc/en-ge/000207835/wrong-windows-firewall-selected)
 
+## 10. Inloggen op Beheer01 met een domeinaccount mislukt na de domain join
+
+**Datum.** 4 november 2026, fase 2. **Status: open.**
+
+**Symptoom.** Na de domain join en de herstart startte Beheer01 erg langzaam op. Inloggen
+als `VERBEEK\Administrator` (en `verbeek\Administrator`) gaf: *"The security database on
+the server does not have a computer account for this workstation trust relationship."*
+Een tweede poging later gaf dezelfde melding.
+
+**Wat vaststaat.**
+- Op DC01 bestaat het computeraccount `BEHEER01`, `Enabled`, in `CN=Computers`,
+  aangemaakt om 01:03:29: bij de tweede, geslaagde join. De eerste poging (zonder
+  administratorrechten, "Access is denied") heeft geen account achtergelaten.
+- Op Beheer01, ingelogd met het lokale account: `PartOfDomain : True`, domein
+  `verbeek.internal`, en `Test-ComputerSecureChannel` geeft `True` ("in good condition").
+- Het NETLOGON-event 5782 op DC01 om 00:31 ("No DNS servers configured") hoort bij het
+  herstarten van de netwerkkaart van DC01 (storing 9), niet bij deze join.
+
+**Oorzaak.** Niet vastgesteld. De vertrouwensrelatie lijkt in orde volgens beide kanten,
+en toch mislukt het inloggen met een domeinaccount.
+
+**Volgende stap.** De logboeken op beide machines rond het moment van inloggen bekijken
+(Beheer01: System en NETLOGON; DC01: Security), voordat er iets hersteld wordt.
+
