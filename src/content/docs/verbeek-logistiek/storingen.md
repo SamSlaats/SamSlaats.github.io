@@ -532,4 +532,7 @@ DC01.verbeek.internal
 - De foutmelding wees naar het computeraccount, maar de oorzaak zat in het netwerk. De
   logboeken aan beide kanten lieten zien wat wel en niet werkte; daaruit volgde de poort.
 - Voor de hoge RPC-poorten volstaat een test op een willekeurige poort niet: op DC01
-  luistert niet op elke poort iets. Nog uit te zoeken hoe dat wel te testen is.
+  luistert niet op elke poort iets. Eerst op DC01 kijken welke hoge poorten luisteren
+  (`Get-NetTCPConnection -State Listen`), en die testen. Deze poorten worden bij het
+  opstarten toegewezen en kunnen na een herstart anders zijn; daarom staat in de regel de
+  hele range.

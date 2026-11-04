@@ -211,6 +211,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 4 nov 2026 | Stap 8, controles vooraf op Beheer01: `nltest /dsgetdc:verbeek.internal` vindt DC01 (flags o.a. `PDC`, `KDC`, `GTIMESERV`); stripchart naar DC01 −2,25 s. De tijdzone van Beheer01 stond op Pacific, net als bij DC01. |
 | 4 nov 2026 | Eerste `Add-Computer` gaf "Access is denied": PowerShell draaide niet als administrator. Tweede poging (als administrator, met `VERBEEK\Administrator` als bewuste keuze; een apart join-account volgt in #17) gelukt: account `BEHEER01` aangemaakt om 01:03:29 in `CN=Computers`. Inloggen als `VERBEEK\Administrator` na de herstart mislukt. Zie [storing 10](/verbeek-logistiek/storingen/). |
 | 5 nov 2026 | Logboeken bij een inlogpoging: Kerberos voor `BEHEER01$` werkt, RPC niet ("The RPC server is unavailable"). In de alias `AD_TCP` stond 134 in plaats van 135. Aangepast. Na een herstart van Beheer01: inloggen als `VERBEEK\Administrator` lukt, `nltest /sc_verify` geeft `NERR_Success`, tijdbron `DC01.verbeek.internal`. `slmgr /xpr`: Professional edition, "Notification mode" (niet geactiveerd), dus de join werkt op een niet-geactiveerde Pro (beslissing 11). Stap 8 van #12 af. |
+| 5 nov 2026 | Hoge RPC-poorten getest: op DC01 de luisterende poorten opgezocht, vanaf Beheer01 53889 (`lsass`) en 65225 (`dfsrs`) bereikbaar. |
 
 ## Bewijs
 
@@ -439,6 +440,14 @@ Name            : verbeek.internal
 NetworkCategory : DomainAuthenticated
 
 Test-NetConnection 10.10.20.10 -Port 5985           TcpTestSucceeded : True
+```
+
+Hoge RPC-poorten (na het herstel van storing 10). Op DC01 luisteren onder meer `lsass`
+op 49664, 49668 en 53889, `dns` op 65159 en `dfsrs` op 65225. Vanaf Beheer01:
+
+```txt
+Test-NetConnection 10.10.20.10 -Port 53889          TcpTestSucceeded : True
+Test-NetConnection 10.10.20.10 -Port 65225          TcpTestSucceeded : True
 ```
 
 ### Klok na suspend
