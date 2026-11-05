@@ -22,7 +22,7 @@ export const machines = [
   { naam: 'OPNsense', rol: 'Firewall en router', os: 'OPNsense', vlan: 10, ram: 1, altijd: true, gebouwd: true },
   { naam: 'vEOS', rol: 'Managed switch', os: 'vEOS', vlan: 10, ram: 2, altijd: true, gebouwd: true },
   { naam: 'Beheer', rol: 'Beheerplek voor de webinterface van OPNsense', os: 'Ubuntu 26.04 LTS', vlan: 10, ram: 4, altijd: false, gebouwd: true },
-  { naam: 'DC01', rol: 'Domain controller', os: 'Windows Server 2022', vlan: 20, ram: 2, altijd: true, gebouwd: false },
+  { naam: 'DC01', rol: 'Domain controller', os: 'Windows Server 2022', vlan: 20, ram: 2, altijd: true, gebouwd: true },
   { naam: 'DC02', rol: 'Domain controller', os: 'Windows Server 2022', vlan: 20, ram: 2, altijd: true, gebouwd: false },
   { naam: 'Database', rol: 'Database van de applicatie', os: 'Ubuntu Server', vlan: 20, ram: 2, altijd: true, gebouwd: false },
   { naam: 'Monitoring', rol: 'Prometheus en Grafana', os: 'Ubuntu Server', vlan: 20, ram: 2, altijd: true, gebouwd: false },

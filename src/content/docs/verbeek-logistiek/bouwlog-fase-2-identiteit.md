@@ -13,15 +13,13 @@ afhankelijkheid van één server. Twee domain controllers voor `verbeek.internal
 OU-structuur met accounts en groepen, en Group Policy die aantoonbaar wordt toegepast.
 
 :::note[Stand van zaken]
-Fase 2 is begonnen. De ontwerpkeuzes staan vast (beslissing 3 t/m 9) en de firewallregels
-voor de DC's en de Windows-client zijn ontworpen. De regels voor Servers staan in OPNsense en
-zijn getest: DC01 bereikt de gateway en DNS via OPNsense, een machine zonder regel niet.
-De forest `verbeek.internal` staat op DC01, en DNS stuurt namen buiten het domein door naar
-OPNsense. DC01 haalt zijn tijd van OPNsense. `dcdiag` op DC01 slaagt op alle tests. Open
-op DC01: een waarschuwing van WinRM (10154) die niet verklaard is
-([storing 5](/verbeek-logistiek/storingen/)), en beheer met RSAT vanaf een andere machine
-is nog niet getest. Daarna DC02 bouwen, VLAN 30 en 40 inrichten, de regels voor Clients
-invoeren, accounts en Group Policy.
+DC01 is klaar: de forest `verbeek.internal` staat erop, DNS stuurt namen buiten het domein
+door naar OPNsense, de tijd komt van OPNsense (die hem van buiten haalt), `dcdiag` slaagt,
+en DC01 wordt vanaf Beheer01 beheerd met RSAT. De regels voor Servers en Clients staan in
+OPNsense en zijn getest. Beheer01 (Windows-beheerclient, VLAN 30) is lid van het domein.
+Open op DC01: een waarschuwing van WinRM (10154) zonder gevolg voor beheer, oorzaak niet
+vastgesteld ([storing 5](/verbeek-logistiek/storingen/)). Nog te doen: de negatieve tests
+voor VLAN 30, VLAN 40 (DMZ), DC02, accounts en OU's, en Group Policy.
 :::
 
 ## Ontwerp
