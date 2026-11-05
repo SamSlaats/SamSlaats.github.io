@@ -170,6 +170,10 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 - Beheer01: lid van `verbeek.internal`, computeraccount in `CN=Computers` (verplaatsen naar
   een eigen OU in #17). Join gedaan met `VERBEEK\Administrator`, als bewuste keuze; een apart
   account voor domain joins volgt in #17.
+- Beheer01: RSAT als optionele functies van Windows, via Windows Update: AD DS-tools,
+  Group Policy Management, Server Manager en DNS. DHCP-tools niet: DHCP draait op OPNsense
+  (beslissing 7). DNS met de grafische tool vanaf Beheer01, in lijn met beheer vanaf de
+  client (beslissing 4).
 - DC01: registerwaarde `AlwaysExpectDomainController` = 1 (DWORD) in
   `HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters`, zodat DC01 bij het opstarten
   zijn domeinprofiel blijft zoeken in plaats van op Public te blijven
@@ -212,6 +216,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 4 nov 2026 | Eerste `Add-Computer` gaf "Access is denied": PowerShell draaide niet als administrator. Tweede poging (als administrator, met `VERBEEK\Administrator` als bewuste keuze; een apart join-account volgt in #17) gelukt: account `BEHEER01` aangemaakt om 01:03:29 in `CN=Computers`. Inloggen als `VERBEEK\Administrator` na de herstart mislukt. Zie [storing 10](/verbeek-logistiek/storingen/). |
 | 5 nov 2026 | Logboeken bij een inlogpoging: Kerberos voor `BEHEER01$` werkt, RPC niet ("The RPC server is unavailable"). In de alias `AD_TCP` stond 134 in plaats van 135. Aangepast. Na een herstart van Beheer01: inloggen als `VERBEEK\Administrator` lukt, `nltest /sc_verify` geeft `NERR_Success`, tijdbron `DC01.verbeek.internal`. `slmgr /xpr`: Professional edition, "Notification mode" (niet geactiveerd), dus de join werkt op een niet-geactiveerde Pro (beslissing 11). Stap 8 van #12 af. |
 | 5 nov 2026 | Hoge RPC-poorten getest: op DC01 de luisterende poorten opgezocht, vanaf Beheer01 53889 (`lsass`) en 65225 (`dfsrs`) bereikbaar. |
+| 5 nov 2026 | RSAT geïnstalleerd op Beheer01. Active Directory Users and Computers opent met `verbeek.internal`; `Test-WSMan DC01 -Authentication Kerberos` en `Enter-PSSession DC01` werken vanaf Beheer01. Stap 9 van #12 af. |
 
 ## Bewijs
 
@@ -449,6 +454,18 @@ op 49664, 49668 en 53889, `dns` op 65159 en `dfsrs` op 65225. Vanaf Beheer01:
 Test-NetConnection 10.10.20.10 -Port 53889          TcpTestSucceeded : True
 Test-NetConnection 10.10.20.10 -Port 65225          TcpTestSucceeded : True
 ```
+
+### Beheer vanaf Beheer01
+
+```txt
+PS C:\Users\Administrator> Test-WSMan DC01 -Authentication Kerberos
+ProductVersion  : OS: 10.0.20348 SP: 0.0 Stack: 3.0
+
+PS C:\Users\Administrator> Enter-PSSession DC01
+[DC01]: PS C:\Users\Administrator\Documents>
+```
+
+Active Directory Users and Computers op Beheer01 toont het domein `verbeek.internal`.
 
 ### Klok na suspend
 

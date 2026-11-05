@@ -271,8 +271,11 @@ workaround mogen staan. Het punt blijft open tot de oorzaak is onderzocht.
 - Een eerste verklaring (timing bij opstart) werd door een vervolgtest (andere foutcode na
   herstart van de service) deels weerlegd. Een waarschuwing meer dan één keer testen voor
   je de oorzaak noemt.
-- Nog te testen: of RSAT vanaf een andere machine met Kerberos op DC01 kan inloggen, en
-  of de DNS-volgorde bij DC02 (de ander eerst, zichzelf tweede) de 1014's vermindert.
+- Getest op 5 november: vanaf Beheer01 werken `Test-WSMan DC01 -Authentication Kerberos`
+  en `Enter-PSSession DC01`, zonder de WSMAN-SPN. De waarschuwing 10154 heeft dus geen
+  zichtbaar gevolg voor beheer op afstand; de oorzaak blijft open.
+- Nog te testen: of de DNS-volgorde bij DC02 (de ander eerst, zichzelf tweede) de 1014's
+  vermindert.
 
 ## 6. DC01 loopt 1,5 uur achter na een suspend
 
