@@ -1,7 +1,7 @@
 // Eén bron voor de cijfers van het lab. De startpagina en de pagina Ontwerp lezen hieruit.
 // Pas dit bestand aan als er iets verandert, en zet dan ook `bijgewerkt` op vandaag.
 
-export const bijgewerkt = '2026-11-05';
+export const bijgewerkt = '2026-11-06';
 
 /** Geheugen van de pc waarop het lab draait, in GB. */
 export const hostRam = 32;
@@ -27,7 +27,7 @@ export const machines = [
   { naam: 'Database', rol: 'Database van de applicatie', os: 'Ubuntu Server', vlan: 20, ram: 2, altijd: true, gebouwd: false },
   { naam: 'Monitoring', rol: 'Prometheus en Grafana', os: 'Ubuntu Server', vlan: 20, ram: 2, altijd: true, gebouwd: false },
   { naam: 'Webserver', rol: 'Interne webapplicatie', os: 'Ubuntu Server', vlan: 40, ram: 1, altijd: true, gebouwd: false },
-  { naam: 'Windows-client', rol: 'Testwerkplek', os: 'Windows 11 Pro', vlan: 30, ram: 4, altijd: false, gebouwd: false },
+  { naam: 'Beheer01', rol: 'Windows-beheerclient (RSAT)', os: 'Windows 11 Pro', vlan: 30, ram: 4, altijd: false, gebouwd: true },
   { naam: 'Back-upserver', rol: 'Veeam Backup & Replication', os: 'Windows Server 2022', vlan: 20, ram: 8, altijd: false, gebouwd: false },
 ];
 
