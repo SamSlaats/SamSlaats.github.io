@@ -149,12 +149,16 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 
   | Workstation | MAC | vEOS | LAN segment | Gecontroleerd |
   |---|---|---|---|---|
-  | Network Adapter 1 | `00:0C:29:64:81:84` | Management1 | geen | 2 nov 2026 |
-  | Network Adapter 2 | `00:0C:29:64:81:8E` | Ethernet1 | `Trunk` | 2 nov 2026 |
-  | Network Adapter 3 | `00:0C:29:64:81:98` | Ethernet2 | `VLAN-10` | 2 nov 2026 |
-  | Network Adapter 4 | `00:0C:29:64:81:A2` | Ethernet3 | `VLAN-20` | 2 nov 2026 |
-  | Network Adapter 5 | `00:0C:29:64:81:AC` | Ethernet4 | `VLAN-30` | 2 nov 2026 |
+  | Network Adapter 1 | `00:0C:29:64:81:84` | Management1 | geen | 6 nov 2026 |
+  | Network Adapter 2 | `00:0C:29:64:81:8E` | Ethernet1 | `Trunk` | 6 nov 2026 |
+  | Network Adapter 3 | `00:0C:29:64:81:98` | Ethernet2 | `VLAN-10` | 6 nov 2026 |
+  | Network Adapter 4 | `00:0C:29:64:81:A2` | Ethernet3 | `VLAN-20` | 6 nov 2026 |
+  | Network Adapter 5 | `00:0C:29:64:81:AC` | Ethernet4 | `VLAN-30` | 6 nov 2026 |
+  | Network Adapter 6 | `00:0C:29:64:81:B6` | Ethernet5 | `VLAN-40` | 6 nov 2026 |
 
+- Ethernet5 (nieuw, adapter 6 van de switch-VM): `switchport access vlan 40`, description
+  `DMZ-segment`, opgeslagen met `write memory`. Een nieuwe poort staat op vEOS meteen aan,
+  in VLAN 1; daarom direct na het opstarten geconfigureerd (zie beslissing 2).
 - Beheer01: Windows 11 Pro (beslissing 11), netwerkkaart `00:0C:29:33:C6:C0` op segment
   `VLAN-30`, vast adres 10.10.30.10/24, gateway 10.10.30.1.
 - Beheer01: DNS-server 10.10.20.10 (DC01), volgens beslissing 6. Zonder de DNS van de DC
@@ -216,6 +220,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 5 nov 2026 | Hoge RPC-poorten getest: op DC01 de luisterende poorten opgezocht, vanaf Beheer01 53889 (`lsass`) en 65225 (`dfsrs`) bereikbaar. |
 | 5 nov 2026 | RSAT geïnstalleerd op Beheer01. Active Directory Users and Computers opent met `verbeek.internal`; `Test-WSMan DC01 -Authentication Kerberos` en `Enter-PSSession DC01` werken vanaf Beheer01. Stap 9 van #12 af. |
 | 6 nov 2026 | Negatieve tests vanaf Beheer01, met `tcpdump -i pflog0` op OPNsense als bewijs (stap 10 van #12). Ping en SSH naar de beheer-VM (10.10.10.10) en HTTPS naar de webinterface van OPNsense (10.10.30.1:443) worden op Clients geblokkeerd door regel 15; ping naar 10.10.30.1 slaagt (eigen ICMP-regel). Beheer01 tijdelijk op 10.10.30.11: 5985 naar DC01 geblokkeerd, 389 doorgelaten. Daarna terug op 10.10.30.10, DNS 10.10.20.10, 5985 slaagt weer. |
+| 6 nov 2026 | Switch-VM uitgezet (configuratie eerst opgeslagen), zesde netwerkkaart toegevoegd op segment `VLAN-40`. In vEOS verschijnt die als Ethernet5 (`bia 000c.2964.81b6`, gelijk aan VMware). Ethernet5 stond na het opstarten aan in VLAN 1; meteen in VLAN 40 gezet met description `DMZ-segment`. Alle zes adapters nagelopen op MAC-adres en segment. Daarna: DC01 op Et3, Beheer01 op Et4, Beheer01 bereikt DC01 op 389. |
 
 ## Bewijs
 
