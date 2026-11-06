@@ -215,6 +215,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 5 nov 2026 | Logboeken bij een inlogpoging: Kerberos voor `BEHEER01$` werkt, RPC niet ("The RPC server is unavailable"). In de alias `AD_TCP` stond 134 in plaats van 135. Aangepast. Na een herstart van Beheer01: inloggen als `VERBEEK\Administrator` lukt, `nltest /sc_verify` geeft `NERR_Success`, tijdbron `DC01.verbeek.internal`. `slmgr /xpr`: Professional edition, "Notification mode" (niet geactiveerd), dus de join werkt op een niet-geactiveerde Pro (beslissing 11). Stap 8 van #12 af. |
 | 5 nov 2026 | Hoge RPC-poorten getest: op DC01 de luisterende poorten opgezocht, vanaf Beheer01 53889 (`lsass`) en 65225 (`dfsrs`) bereikbaar. |
 | 5 nov 2026 | RSAT geïnstalleerd op Beheer01. Active Directory Users and Computers opent met `verbeek.internal`; `Test-WSMan DC01 -Authentication Kerberos` en `Enter-PSSession DC01` werken vanaf Beheer01. Stap 9 van #12 af. |
+| 6 nov 2026 | Negatieve tests vanaf Beheer01, met `tcpdump -i pflog0` op OPNsense als bewijs (stap 10 van #12). Ping en SSH naar de beheer-VM (10.10.10.10) en HTTPS naar de webinterface van OPNsense (10.10.30.1:443) worden op Clients geblokkeerd door regel 15; ping naar 10.10.30.1 slaagt (eigen ICMP-regel). Beheer01 tijdelijk op 10.10.30.11: 5985 naar DC01 geblokkeerd, 389 doorgelaten. Daarna terug op 10.10.30.10, DNS 10.10.20.10, 5985 slaagt weer. |
 
 ## Bewijs
 
@@ -464,6 +465,30 @@ PS C:\Users\Administrator> Enter-PSSession DC01
 ```
 
 Active Directory Users and Computers op Beheer01 toont het domein `verbeek.internal`.
+
+### Wat dicht moet blijven (VLAN 30)
+
+Op OPNsense, `sudo tcpdump -n -e -i pflog0`, tijdens de tests vanaf Beheer01:
+
+```txt
+rule 15/0(match): block in on em0_vlan30: 10.10.30.10 > 10.10.10.10: ICMP echo request ...
+rule 15/0(match): block in on em0_vlan30: 10.10.30.10.51186 > 10.10.10.10.22: Flags [S] ...
+rule 15/0(match): block in on em0_vlan30: 10.10.30.10.49622 > 10.10.30.1.443: Flags [S] ...
+rule 15/0(match): block in on em0_vlan30: 10.10.30.11.49699 > 10.10.20.10.5985: Flags [S] ...
+rule 112/0(match): pass out on em0_vlan20: 10.10.30.11.49806 > 10.10.20.10.389: Flags [S] ...
+```
+
+| Test vanaf Beheer01 | Resultaat |
+|---|---|
+| ping 10.10.10.10 (beheer-VM) | geblokkeerd |
+| TCP 22 naar 10.10.10.10 | geblokkeerd |
+| TCP 443 naar 10.10.30.1 (webinterface OPNsense) | geblokkeerd; ping naar 10.10.30.1 slaagt |
+| TCP 5985 naar DC01 vanaf 10.10.30.11 | geblokkeerd |
+| TCP 389 naar DC01 vanaf 10.10.30.11 | `TcpTestSucceeded : True` |
+| TCP 5985 naar DC01, terug op 10.10.30.10 | `TcpTestSucceeded : True` |
+
+De beheer-VM stond aan tijdens de tests: de SSH-sessie naar OPNsense voor de `tcpdump` liep
+vanaf de beheer-VM.
 
 ### Klok na suspend
 
