@@ -238,6 +238,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 10 nov 2026 | Negatieve tests vanuit de DMZ (websrv01), met de pflog als bewijs: ping en 389 naar DC01, 22 naar de beheer-VM, 445 naar Beheer01 en 443 naar internet allemaal geblokkeerd door regel 15 op `em0_vlan40`; DNS-vraag via OPNsense lukt. |
 | 10 nov 2026 | DHCP voor Clients in Dnsmasq: 10.10.30.100 tot .200, Clients opgeslagen in de interfaces (les uit storing 11), en DHCP-optie `dns-server` (6) op Clients naar 10.10.20.10 (beslissing 6). Eerst per ongeluk in het veld voor DHCPv6 gezet; verbeterd. Test met Beheer01 tijdelijk op DHCP: 10.10.30.142, gateway en DHCP-server 10.10.30.1, DNS 10.10.20.10; `nltest /dsgetdc:verbeek.internal` vindt DC01. Daarna terug op 10.10.30.10 (DNS 10.10.20.10), 5985 naar DC01 slaagt. |
 | 10 nov 2026 | DHCP gaf als achtervoegsel `internal` (het domein van OPNsense) in plaats van `verbeek.internal`. DHCP-optie `domain-name` (15) op Clients naar `verbeek.internal`. Test met Beheer01 op DHCP: `Connection-specific DNS Suffix: verbeek.internal`. #12 af. |
+| 11 nov 2026 | Negatieve tests vanuit Servers (DC01), met de pflog: 445 naar Beheer01, 22 naar de beheer-VM en 22 naar websrv01 geblokkeerd door regel 15 op `em0_vlan20`, net als de ping die `Test-NetConnection` meestuurt. In dezelfde pflog gaat DNS van Beheer01 naar DC01 wel door. #14 af. |
 
 ## Bewijs
 
@@ -533,6 +534,21 @@ rule 15/0(match): block in on em0_vlan40: 10.10.40.10.59878 > 142.251.153.119.44
 | `nc -zv -w 3 10.10.30.10 445` (Beheer01) | timed out |
 | `nc -zv -w 3 www.google.com 443` | timed out |
 | `resolvectl query google.com` | antwoord, via OPNsense |
+
+### Wat dicht moet blijven (vanuit Servers)
+
+Op OPNsense, `sudo tcpdump -n -e -i pflog0 host 10.10.20.10` (tijden in UTC), tijdens de
+tests vanaf DC01:
+
+```txt
+rule 15/0(match): block in on em0_vlan20: 10.10.20.10.54226 > 10.10.30.10.445: Flags [S] ...
+rule 15/0(match): block in on em0_vlan20: 10.10.20.10.54232 > 10.10.10.10.22: Flags [S] ...
+rule 15/0(match): block in on em0_vlan20: 10.10.20.10.54236 > 10.10.40.10.22: Flags [S] ...
+rule 130/0(match): pass out on em0_vlan20: 10.10.30.10.54334 > 10.10.20.10.53: ...
+```
+
+`Test-NetConnection` vanaf DC01 naar 10.10.30.10:445, 10.10.10.10:22 en 10.10.40.10:22:
+alle drie `TcpTestSucceeded : False`.
 
 ### Klok na suspend
 
