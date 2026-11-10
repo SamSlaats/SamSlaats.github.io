@@ -205,6 +205,10 @@ test-VM wel een adres: 10.10.20.184.
 voor Servers nog niet had geladen, maar dat heb ik voor de herstart niet in het log van
 Dnsmasq gecontroleerd. Dat is dus een vermoeden, geen bewijs.
 
+*Aanvulling 6 november:* bij storing 11 had Dnsmasq precies dit symptoom (aanvragen komen
+aan, geen antwoord, stil log) omdat een interface wel aangevinkt maar niet opgeslagen was.
+Dat kan hier ook de oorzaak zijn geweest. Achteraf is dat niet meer na te gaan.
+
 **Les.**
 - Een packet capture met een poortfilter op het parent-interface ziet getagde frames
   niet: het filter zoekt UDP direct na de Ethernet-header, maar daar zit eerst de
@@ -539,3 +543,89 @@ DC01.verbeek.internal
   (`Get-NetTCPConnection -State Listen`), en die testen. Deze poorten worden bij het
   opstarten toegewezen en kunnen na een herstart anders zijn; daarom staat in de regel de
   hele range.
+
+## 11. DHCP in de DMZ: aanvragen komen aan, Dnsmasq antwoordt niet
+
+**Datum.** 6 november 2026, fase 2. **Status: opgelost.**
+
+**Symptoom.** De test-VM in VLAN 40 kreeg geen adres via DHCP. Op de switch stond zijn
+MAC-adres wel op Ethernet5 in VLAN 40.
+
+**Aanpak.** Bewust niet herstart: bij storing 4 verdween het probleem na een herstart
+zonder dat de oorzaak bekend werd.
+
+1. `tcpdump -i em0_vlan40 port 67 or port 68` op OPNsense: de aanvragen van de test-VM
+   kwamen binnen, er ging geen antwoord terug.
+2. Log van Dnsmasq: bij de laatste herstart van Dnsmasq (21:45:14, na Apply) stond de range
+   `10.10.40.100 -- 10.10.40.200` erin. De instellingen waren dus geladen. Om 21:47, toen de
+   aanvragen binnenkwamen, stond er niets in het log, ook geen weigering.
+3. Instellingen van Dnsmasq, lijst *Interfaces*: DMZ was aangevinkt, maar niet opgeslagen.
+   Management en Servers stonden er wel in.
+
+**Oorzaak.** Dnsmasq luisterde niet op het DMZ-interface. De range was apart opgeslagen en
+geladen, de keuze van het interface niet. OPNsense ontving de aanvragen, maar Dnsmasq kreeg
+ze nooit te zien; daarom bleef het log stil.
+
+**Herstel.** Interface opgeslagen. Daarna kreeg de test-VM 10.10.40.184/24.
+
+**Les.**
+- In OPNsense wordt per onderdeel opgeslagen. Dat een range geladen is, bewijst niet dat de
+  rest van de instellingen actief is.
+- Een stil log betekent niet dat alles goed is: een dienst die een aanvraag niet ziet,
+  logt er ook niets over.
+- Niet herstarten voordat de oorzaak bekend is. Hier gaf dat het antwoord dat bij storing
+  4 ontbrak.
+
+## 12. websrv01 vraagt bij het opstarten om DHCP, ondanks een vast adres
+
+**Datum.** 9 en 10 november 2026, fase 2. **Status: opgelost.**
+
+**Symptoom.** websrv01 had een vast adres (10.10.40.10, `dhcp4: false` in netplan). Toch
+toonde de pflog op OPNsense een ping van 10.10.40.1 naar 10.10.40.144, een adres in de
+DHCP-range waar niets stond. Dnsmasq pingt een adres voordat hij het aanbiedt.
+
+**Aanpak.**
+1. Lease voor .144: geen. Het aanbod was dus niet aangenomen.
+2. Switch, `show mac address-table vlan 40`: alleen OPNsense en websrv01. Geen andere
+   machine.
+3. `tcpdump -v -e -i em0_vlan40 port 67 or port 68` bij een herstart van websrv01: een
+   Discover van `00:0c:29:38:bf:c7` met `Hostname: "websrv01"`, en een Offer voor
+   10.10.40.144. Geen `PXEClient`: niet de firmware van de VM, maar het besturingssysteem.
+4. Netplan: alleen `00-installer-config.yaml`, met `dhcp4: false`. `journalctl -b`: niets
+   over DHCP na het opstarten. `cloud-init status`: uitgeschakeld.
+5. Journal met `-o short-monotonic`: op 2,21 seconden
+   `systemd-networkd[306]: ens33: Configuring with /run/systemd/network/zzzz-dracut-default.network`,
+   in de initramfs, vóór de overstap naar het echte systeem rond 4,2 seconden.
+6. `lsinitrd`: in de initramfs zitten `systemd-networkd`, een netwerkbestand met
+   `DHCP=yes`, en de modules `dyn-netconf`, `net-lib` en `kernel-network-modules`.
+
+Een eerder vermoeden (netwerkboot van de firmware) is door stap 3 weerlegd.
+
+**Oorzaak.** De initramfs van Ubuntu 26.04 (dracut) start het netwerk met DHCP. De Discover
+gaat de deur uit, maar binnen twee seconden neemt het echte systeem het over met zijn vaste
+adres; het aanbod wordt nooit aangenomen. Netwerk in de initramfs is alleen nodig als de
+schijf via het netwerk komt; hier staat hij lokaal op LVM.
+
+**Herstel.** Eerst een snapshot. Ubuntu levert een profiel dat netwerk uit de initramfs
+houdt (`/usr/lib/dracut/dracut.conf.d/no-network/10-no-network.conf`: sluit `net-lib` en
+`systemd-networkd` uit, waar alle netwerkmodules van afhangen). Dat profiel aangezet met een
+verwijzing in `/etc/dracut.conf.d/`, daarna `sudo dracut --force`. `lsinitrd` vindt geen
+netwerkmodules en geen `DHCP=yes` meer; de initramfs ging van 63 naar 36 MB. Na een
+herstart geen DHCP-aanvraag meer, en websrv01 start met 10.10.40.10 en tijd van
+10.10.40.1.
+
+`dracut --force` meldt nu `dracut[E]: Module 'dyn-netconf' depends on module
+'systemd-networkd', which can't be installed`: iets voegt `dyn-netconf` expliciet toe.
+Het resultaat is goed; waar het vandaan komt, is nog niet uitgezocht.
+
+Tijdens het eerste `dracut --force` meldde de kernel van websrv01 een *RCU stall*: een
+processor kreeg ongeveer een minuut geen rekentijd. Waarschijnlijk had de host het te druk
+(alle VM's aan en een browser met 2 GB); niet verder onderzocht.
+
+**Les.**
+- Een vast adres in netplan zegt niets over wat er vóór netplan gebeurt.
+- Een grep op één woord kan iets missen: networkd in de initramfs logt geen "DHCP", alleen
+  "Configuring with ...".
+- Een vermoeden toetsen aan een detail in de data: de hostnaam in de Discover sloot de
+  firmware uit.
+

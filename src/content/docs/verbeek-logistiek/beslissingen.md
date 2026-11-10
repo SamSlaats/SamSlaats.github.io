@@ -313,3 +313,45 @@ Een niet-geactiveerde Pro verloopt niet en kan lid worden van het domein.
 - Zonder activatie zijn sommige instellingen van Windows niet beschikbaar; voor beheer
   met RSAT maakt dat niet uit.
 - Voor een echte omgeving is een licentie nodig; dat geldt niet voor dit lab.
+
+## 12. De DMZ krijgt alleen wat nodig is, en praat niet met de DC's
+
+**Context**
+In de DMZ (VLAN 40) komt de webserver: een machine die je minder vertrouwt dan de rest,
+omdat hij bereikbaar moet zijn. Bij het inrichten van VLAN 40 en websrv01 moest gekozen
+worden waar de DMZ DNS, tijd en updates vandaan haalt.
+
+**Opties**
+- *DNS via de DC's, zoals Clients.* Interne namen werken meteen, maar dan is er een regel
+  van de DMZ naar de DNS-dienst van DC01. Een overgenomen webserver praat dan rechtstreeks
+  met de domeincontroller (in 2020 kon een lek in de DNS-server van Windows, SIGRed, via
+  DNS-verkeer een DC overnemen).
+- *DNS via OPNsense.* De DMZ blijft los van intern; namen uit `verbeek.internal` zijn dan
+  niet bekend. Als dat nodig is, kan OPNsense vragen voor `verbeek.internal` doorsturen naar
+  de DC's (domain override); de DMZ-machines praten dan nog steeds alleen met OPNsense.
+- *Updates via een regel naar het hele internet (80/443), naar alleen de updateservers, of
+  alleen tijdelijk.*
+
+**Keuze**
+- **DNS via OPNsense (10.10.40.1).** De DMZ bevat servers die je minder vertrouwt; die
+  horen niet de DNS te gebruiken die intern ook gebruikt wordt. Een domain override wordt
+  pas overwogen als de webserver interne namen nodig heeft (#21).
+- **Tijd van OPNsense (10.10.40.1).** De machine in de DMZ blijft, en zijn logboeken moeten
+  naast die van de rest te leggen zijn.
+- **Updates alleen van websrv01 naar de updateservers van Ubuntu**, met een alias op naam
+  (`Ubuntu_updates`) en alleen poort 80. Er is maar één server in de DMZ die updates nodig
+  heeft; strak houden betekent een vaste bron en een vaste bestemming.
+- **Een vast adres voor websrv01 (10.10.40.10)**, zodat de regels aan dat adres kunnen
+  hangen en de server niet afhangt van DHCP, net als de beheer-VM in fase 1.
+
+**Gevolgen**
+- Regels op DMZ: `DMZ net` → 10.10.40.1 op TCP/UDP 53 en UDP 123; 10.10.40.10 →
+  `Ubuntu_updates` op TCP 80. Al het andere vanuit de DMZ wordt geblokkeerd.
+- Wat Ubuntu verder naar buiten wil, komt als blokkering in de pflog. Daarom op websrv01
+  uitgezet wat niet nodig is (zie de bouwlog): snapd, het nieuws van motd en apt, de
+  NTS-tijdservers van Ubuntu, en netwerk in de initramfs (storing 12).
+- Ubuntu gebruikt standaard NTS (versleutelde tijd) naar zijn eigen servers. Die is
+  ingeruild voor gewone NTP naar OPNsense, binnen het eigen netwerk.
+- Alleen poort 80 voor updates: verandert Ubuntu ooit naar HTTPS, dan blijkt dat uit
+  blokkeringen op 443 en moet de regel worden aangepast.
+
