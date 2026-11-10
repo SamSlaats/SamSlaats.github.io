@@ -1,7 +1,6 @@
 ---
 title: Autorisatiematrix
 description: Eigen webapp die een autorisatiematrix (functie × recht) beheert en doorvoert naar Entra ID en later on-prem AD. Leerproject in C# en .NET, in ontwikkeling.
-draft: true
 sidebar:
   label: Overzicht
   order: 1

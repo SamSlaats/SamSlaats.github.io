@@ -1,7 +1,6 @@
 ---
 title: Beslissingen
 description: Keuzes over de werkwijze en opbouw van de autorisatiematrix, met de afweging erachter.
-draft: true
 sidebar:
   order: 4
 ---

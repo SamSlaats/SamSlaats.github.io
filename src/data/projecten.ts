@@ -75,4 +75,20 @@ export const projecten: Project[] = [
     ],
     techniek: ['Entra ID', 'Exchange Online', 'Intune', 'Autopilot', 'Defender for Endpoint', 'Azure App Service'],
   },
+  {
+    titel: 'Autorisatiematrix',
+    domein: 'code',
+    href: '/autorisatiematrix/',
+    herkomst: 'Eigen leerproject',
+    periode: 'sinds november 2026',
+    status: 'In opbouw',
+    samenvatting:
+      'Een webapp die vastlegt welke functie welke rechten krijgt, dat vergelijkt met de groepen in Entra ID en de verschillen pas na goedkeuring doorvoert. Later ook on-prem AD in het lab.',
+    cijfers: [
+      { waarde: 'M0', label: 'huidige fase' },
+      { waarde: '6', label: 'AUTH-groepen' },
+      { waarde: '8', label: 'testgebruikers' },
+    ],
+    techniek: ['C# / .NET 10', 'Blazor Server', 'Entra ID', 'Microsoft Graph', 'GitHub Actions'],
+  },
 ];
