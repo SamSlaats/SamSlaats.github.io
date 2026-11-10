@@ -1,7 +1,7 @@
 // Eén bron voor de cijfers van het lab. De startpagina en de pagina Ontwerp lezen hieruit.
 // Pas dit bestand aan als er iets verandert, en zet dan ook `bijgewerkt` op vandaag.
 
-export const bijgewerkt = '2026-11-06';
+export const bijgewerkt = '2026-11-11';
 
 /** Geheugen van de pc waarop het lab draait, in GB. */
 export const hostRam = 32;
@@ -35,7 +35,7 @@ export const machines = [
 // href: vul het adres van de bouwlogpagina in zodra die gepubliceerd is, bijv. '/verbeek-logistiek/bouwlog-fase-1-netwerk/'
 export const fases: { nr: number; titel: string; status: 'klaar' | 'bezig' | 'gepland'; href?: string }[] = [
   { nr: 1, titel: 'Netwerk', status: 'klaar', href: '/verbeek-logistiek/bouwlog-fase-1-netwerk/' },
-  { nr: 2, titel: 'Identiteit', status: 'bezig' },
+  { nr: 2, titel: 'Identiteit', status: 'bezig', href: '/verbeek-logistiek/bouwlog-fase-2-identiteit/' },
   { nr: 3, titel: 'Applicatie', status: 'gepland' },
   { nr: 4, titel: 'Back-up', status: 'gepland' },
   { nr: 5, titel: 'Monitoring', status: 'gepland' },
@@ -47,6 +47,6 @@ export const fases: { nr: number; titel: string; status: 'klaar' | 'bezig' | 'ge
 export const onderdelen: { titel: string; href: string | null }[] = [
   { titel: 'Casus en eisen', href: '/verbeek-logistiek/casus/' },
   { titel: 'Ontwerp', href: '/verbeek-logistiek/ontwerp/' },
-  { titel: 'Beslissingen', href: null },
+  { titel: 'Beslissingen', href: '/verbeek-logistiek/beslissingen/' },
   { titel: 'Storingen en herstel', href: '/verbeek-logistiek/storingen/' },
 ];

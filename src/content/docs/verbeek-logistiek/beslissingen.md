@@ -1,7 +1,6 @@
 ---
 title: Beslissingen
 description: Ontwerpkeuzes met de afweging erachter.
-draft: true
 sidebar:
   order: 4
 ---

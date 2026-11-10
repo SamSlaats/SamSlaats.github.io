@@ -1,7 +1,6 @@
 ---
 title: 'Bouwlog fase 2: identiteit'
 description: Twee domain controllers, accounts en Group Policy voor verbeek.internal.
-draft: true
 sidebar:
   order: 5.2
 ---

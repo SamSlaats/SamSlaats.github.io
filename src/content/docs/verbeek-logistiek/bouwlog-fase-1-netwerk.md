@@ -73,7 +73,8 @@ Advanced in Workstation):
 | Network Adapter 4 | `00:0C:29:64:81:A2` | Ethernet3 | `VLAN-20` |
 | Network Adapter 5 | `00:0C:29:64:81:AC` | Ethernet4 | losgekoppeld (poort staat uit) |
 
-Dit is de stand aan het eind van fase 1. De actuele tabel staat in de bouwlog van fase 2.
+Dit is de stand aan het eind van fase 1. De actuele tabel staat in de
+[bouwlog van fase 2](/verbeek-logistiek/bouwlog-fase-2-identiteit/).
 
 **Beheer-VM: Ubuntu 26.04 LTS**
 
