@@ -229,6 +229,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 10 nov 2026 | Herstart van websrv01 voor de nieuwe kernel: hostnaam, adres, tijdzone en chrony bleven staan. Daarna een DHCP-aanvraag van websrv01 bij het opstarten, ondanks het vaste adres: netwerk in de initramfs. Ubuntu-profiel `no-network` voor dracut aangezet; daarna geen DHCP meer ([storing 12](/verbeek-logistiek/storingen/)). |
 | 10 nov 2026 | Negatieve tests vanuit de DMZ (websrv01), met de pflog als bewijs: ping en 389 naar DC01, 22 naar de beheer-VM, 445 naar Beheer01 en 443 naar internet allemaal geblokkeerd door regel 15 op `em0_vlan40`; DNS-vraag via OPNsense lukt. |
 | 10 nov 2026 | DHCP voor Clients in Dnsmasq: 10.10.30.100 tot .200, Clients opgeslagen in de interfaces (les uit storing 11), en DHCP-optie `dns-server` (6) op Clients naar 10.10.20.10 (beslissing 6). Eerst per ongeluk in het veld voor DHCPv6 gezet; verbeterd. Test met Beheer01 tijdelijk op DHCP: 10.10.30.142, gateway en DHCP-server 10.10.30.1, DNS 10.10.20.10; `nltest /dsgetdc:verbeek.internal` vindt DC01. Daarna terug op 10.10.30.10 (DNS 10.10.20.10), 5985 naar DC01 slaagt. |
+| 10 nov 2026 | DHCP gaf als achtervoegsel `internal` (het domein van OPNsense) in plaats van `verbeek.internal`. DHCP-optie `domain-name` (15) op Clients naar `verbeek.internal`. Test met Beheer01 op DHCP: `Connection-specific DNS Suffix: verbeek.internal`. #12 af. |
 
 ## Bewijs
 
