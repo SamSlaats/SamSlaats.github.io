@@ -85,6 +85,14 @@ dat Windows 11 als optionele functie van Windows Update haalt. Alleen 80 en 443,
 netwerk zit in de standaardblokkade en de specifieke regels naar de DC's; 445 en RPC naar
 de DC's blijven wel een weg die een aanvaller op een client zou proberen.
 
+**DMZ (VLAN 40)** (beslissing 12)
+
+| Bron | Doel | Protocol/poort | Waarom |
+|---|---|---|---|
+| DMZ | 10.10.40.1 | TCP/UDP 53 | DNS via OPNsense, niet via de DC's |
+| DMZ | 10.10.40.1 | UDP 123 | Tijd van OPNsense, zodat logboeken naast elkaar te leggen zijn |
+| websrv01 (10.10.40.10) | `Ubuntu_updates` | TCP 80 | Updates, alleen naar de updateservers van Ubuntu |
+
 **Wat dicht moet blijven**
 
 | Van | Naar | Waarom | Test |
