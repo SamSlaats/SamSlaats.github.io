@@ -227,6 +227,7 @@ Alle regels: IPv4, richting `in`, bronpoort any.
 | 9–10 nov 2026 | Pflog toonde blokkeringen op 443 naar `api.snapcraft.io` en `commercial-systems-content-cache` van Canonical. Op websrv01: tijdzone Europe/Amsterdam, `motd-news.timer` uit, `pro config set apt_news=false`, snapd verwijderd (`apt purge snapd`; het metapakket `ubuntu-server-minimal` ging mee, `autoremove --dry-run` verwijdert niets). Reden: updates lopen via apt, en bekende blokkeringen vervuilen het log, waardoor afwijkingen minder opvallen. |
 | 10 nov 2026 | Na `apt upgrade` blokkeringen op poort 4460 (NTS) naar de tijdservers van Ubuntu: Ubuntu 26.04 gebruikt chrony met NTS. NTP-regel op DMZ: `DMZ net` → 10.10.40.1 UDP 123. In chrony `sources.d/ubuntu-ntp-pools.sources` hernoemd naar `.sources.uit` (chrony leest alleen `*.sources`) en een eigen bestand `sources.d/opnsense.sources` met `server 10.10.40.1 iburst`. `chronyc -n sources`: `^* 10.10.40.1`, stratum 2. Daarna geen blokkeringen meer vanaf websrv01. |
 | 10 nov 2026 | Herstart van websrv01 voor de nieuwe kernel: hostnaam, adres, tijdzone en chrony bleven staan. Daarna een DHCP-aanvraag van websrv01 bij het opstarten, ondanks het vaste adres: netwerk in de initramfs. Ubuntu-profiel `no-network` voor dracut aangezet; daarna geen DHCP meer ([storing 12](/verbeek-logistiek/storingen/)). |
+| 10 nov 2026 | Negatieve tests vanuit de DMZ (websrv01), met de pflog als bewijs: ping en 389 naar DC01, 22 naar de beheer-VM, 445 naar Beheer01 en 443 naar internet allemaal geblokkeerd door regel 15 op `em0_vlan40`; DNS-vraag via OPNsense lukt. |
 
 ## Bewijs
 
@@ -500,6 +501,28 @@ rule 112/0(match): pass out on em0_vlan20: 10.10.30.11.49806 > 10.10.20.10.389: 
 
 De beheer-VM stond aan tijdens de tests: de SSH-sessie naar OPNsense voor de `tcpdump` liep
 vanaf de beheer-VM.
+
+### Wat dicht moet blijven (DMZ)
+
+Op OPNsense, `sudo tcpdump -n -e -i pflog0 net 10.10.40.0/24` (tijden in UTC), tijdens de
+tests vanaf websrv01 (10.10.40.10):
+
+```txt
+rule 15/0(match): block in on em0_vlan40: 10.10.40.10 > 10.10.20.10: ICMP echo request ...
+rule 15/0(match): block in on em0_vlan40: 10.10.40.10.39854 > 10.10.20.10.389: Flags [S] ...
+rule 15/0(match): block in on em0_vlan40: 10.10.40.10.49536 > 10.10.10.10.22: Flags [S] ...
+rule 15/0(match): block in on em0_vlan40: 10.10.40.10.37162 > 10.10.30.10.445: Flags [S] ...
+rule 15/0(match): block in on em0_vlan40: 10.10.40.10.59878 > 142.251.153.119.443: Flags [S] ...
+```
+
+| Test vanaf websrv01 | Resultaat |
+|---|---|
+| `ping -c 3 10.10.20.10` (DC01) | 100% packet loss |
+| `nc -zv -w 3 10.10.20.10 389` | timed out |
+| `nc -zv -w 3 10.10.10.10 22` (beheer-VM) | timed out |
+| `nc -zv -w 3 10.10.30.10 445` (Beheer01) | timed out |
+| `nc -zv -w 3 www.google.com 443` | timed out |
+| `resolvectl query google.com` | antwoord, via OPNsense |
 
 ### Klok na suspend
 
