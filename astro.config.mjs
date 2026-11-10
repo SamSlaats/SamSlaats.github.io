@@ -41,6 +41,10 @@ export default defineConfig({
           // Conceptpagina's (draft: true) verdwijnen vanzelf bij publicatie.
           items: [{ autogenerate: { directory: 'verbeek-logistiek' } }],
         },
+        {
+          label: 'Autorisatiematrix project',
+          items: [{ autogenerate: { directory: 'autorisatiematrix' } }],
+        },
       ],
     }),
   ],
