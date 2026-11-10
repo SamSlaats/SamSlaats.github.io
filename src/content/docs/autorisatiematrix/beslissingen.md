@@ -119,25 +119,138 @@ Iets meer stappen per issue. Branch protection, waarmee GitHub een groene pipeli
 afdwingt, is op GitHub Free niet beschikbaar voor privérepo's. Zolang de repo privé is,
 hangt het af van mijn eigen discipline.
 
-## 5. Een eigen testtenant met Entra ID Free
+## 5. De bestaande tenant van mijn Microsoft-account als testtenant
 
 **Context**
 De app leest en wijzigt groepslidmaatschappen via Microsoft Graph. Dat mag alleen in een
-eigen testomgeving, nooit in een tenant van een werkgever, stagebedrijf of Illuvex. Ik heb
+eigen testomgeving, nooit in een tenant van een werkgever, stagebedrijf of Illuvex. Ik had
 nog geen eigen tenant, en dacht dat ik die niet met een privé-mailadres kon aanmaken.
 
 **Opties**
-- *Microsoft 365 Developer Program (E5-sandbox).* Niet beschikbaar voor mij.
-- *Een gratis Azure-account met een nieuwe Entra-tenant (Entra ID Free).* Gebruikers,
-  beveiligingsgroepen, app-registraties, app-rollen en Graph-rechten voor applicaties zitten
-  er allemaal in. Geen Microsoft 365-licenties.
+- *Microsoft 365 Developer Program (E5-sandbox).* Niet beschikbaar zonder Visual
+  Studio-abonnement of partnerstatus.
+- *Een nieuwe tenant aanmaken via "Manage tenants".* Vraagt om een betaald abonnement:
+  gratis accounts en proefabonnementen mogen geen extra tenants aanmaken.
+- *Overstappen op pay-as-you-go.* Dan mag het wel, en alles wat dit project gebruikt is
+  gratis. Maar er is geen bestedingslimiet: een vergeten virtuele machine wordt gewoon
+  afgeschreven.
+- *De tenant die al bij mijn Microsoft-account hoorde.* Er bleek al een "Standaardmap" te
+  bestaan, op Entra ID Free.
 
 **Keuze**
-Een gratis Azure-account op mijn privé Microsoft-account, met daarin een nieuwe tenant op
-Entra ID Free. In die tenant werk ik met een eigen beheeraccount, niet met het privé-account.
+De bestaande tenant. Eerst gecontroleerd dat hij leeg was: alleen mijn eigen account, geen
+groepen en geen app-registraties. Daarna hernoemd naar Verbeek Logistiek, hetzelfde
+fictieve bedrijf als in [mijn VMware-lab](/verbeek-logistiek/). Als ik in een latere fase
+een on-prem AD aan deze tenant koppel, horen het lab en de tenant zo bij dezelfde
+organisatie.
+
+Ik werk in de tenant met een apart beheeraccount, met Global Administrator en MFA (de
+security defaults staan aan). Mijn privé-account blijft Global Administrator, maar alleen
+als noodaccount, voor als ik met het beheeraccount niet meer binnenkom.
 
 **Gevolgen**
-Geen kosten en geen licenties nodig. Eén beperking: in Entra ID Free kan een app-rol
-(`Matrixbeheerder`) alleen aan losse gebruikers worden toegewezen, niet aan een groep.
-Daarvoor is Entra ID P1 nodig. Voor een testtenant met een paar accounts is dat geen
-probleem.
+Geen kosten en geen licenties. Twee beperkingen van Entra ID Free: een app-rol kan alleen
+aan losse gebruikers worden toegewezen, niet aan een groep (dat vereist P1), en een eigen
+Entra-rol (custom role) maken kan niet. Dat laatste heb ik niet nodig: de app gebruikt een
+app-rol, zie beslissing 9. Het domein van de tenant (`...onmicrosoft.com`) is bij het
+aanmaken automatisch gekozen en kan niet meer worden gewijzigd.
+
+## 6. In CI dezelfde SDK-band als lokaal
+
+**Context**
+In `global.json` staat welke .NET SDK het project gebruikt, zodat de pipeline in GitHub
+Actions met dezelfde versie bouwt als ik in WSL2. Eerst stond `rollForward` op
+`latestFeature`, zodat een update van Ubuntu de build niet zou breken.
+
+In de log van de eerste groene run zag ik dat de pipeline SDK `10.0.403` gebruikte. Lokaal
+heb ik `10.0.114`. Met `latestFeature` mag elke nieuwere .NET 10-SDK, en op de machines van
+GitHub stond die al.
+
+**Opties**
+- *`latestFeature` laten staan.* Werkt nu, maar een andere feature band (het middelste
+  cijfer, 1 tegenover 4) kan andere waarschuwingen geven. Omdat waarschuwingen in dit
+  project fouten zijn, kan de pipeline dan rood worden terwijl het lokaal groen is, of
+  andersom.
+- *`latestPatch`.* Alleen het laatste cijfer mag hoger zijn: elke `10.0.1xx` is goed.
+
+**Keuze**
+`latestPatch`. Ubuntu levert .NET 10 alleen in de 1xx-band, dus een update breekt de build
+niet. Na de wijziging gebruikte de pipeline ook `10.0.114`.
+
+**Gevolgen**
+Lokaal en in CI dezelfde compiler en dezelfde controles. Ga ik ooit over op een SDK uit
+een andere band, dan moet `global.json` mee.
+
+## 7. Nu een client secret, een certificaat bij het uitrollen
+
+**Context**
+De app moet aan Entra ID bewijzen dat hij echt deze app is, om via Graph gebruikers te
+lezen en groepen te wijzigen.
+
+**Opties**
+- *Client secret.* Een lange tekst, een soort wachtwoord, dat bij elke aanmelding wordt
+  meegestuurd. Wie hem heeft, kan zich als de app voordoen.
+- *Certificaat.* Een sleutelpaar: Entra krijgt het publieke deel, het privé-deel verlaat de
+  machine nooit. Veiliger, en wat Microsoft aanraadt voor productie.
+
+**Keuze**
+Voor het ontwikkelen een client secret, 180 dagen geldig, opgeslagen met
+`dotnet user-secrets`: in mijn Linux-home, buiten de repo. In de repo staat alleen het id
+dat naar die map verwijst. User-secrets bestaat alleen tijdens het ontwikkelen; zodra de
+app op een server in het lab draait, moet het toch anders. Dat is het moment voor een
+certificaat.
+
+**Gevolgen**
+Het secret moet nooit in Git, in een chat of in de shellgeschiedenis komen. Daarom sla ik
+het op via `read -rs` en een variabele. Voor het pushen controleer ik met
+`git log -p --all` dat het nergens in de geschiedenis staat. Bij het uitrollen in het lab
+komt er een certificaat bij, en gaat het secret weg.
+
+## 8. De configuratie heet EntraId, niet Graph
+
+**Context**
+De drie gegevens in user-secrets (tenant-ID, client-ID en het secret) noemde ik eerst
+`Graph:...`, omdat ze voor Microsoft Graph waren. Bij het inloggen in de app bleken
+dezelfde gegevens ook voor het inloggen nodig te zijn.
+
+**Opties**
+- *`Graph` laten staan* en de bibliotheek vertellen die groep te lezen. Niets opnieuw
+  invoeren, maar een naam die niet meer klopt.
+- *Hernoemen naar `EntraId`.* De gegevens opnieuw opslaan.
+
+**Keuze**
+Hernoemen naar `EntraId`. In `appsettings.json` staan onder dezelfde naam de instellingen
+die geen geheim zijn: het adres van de inlogdienst en de paden waar Entra na het in- en
+uitloggen naartoe stuurt. .NET voegt de twee groepen samen.
+
+**Gevolgen**
+Bij het overzetten bleek met een lengtecontrole dat er bij `Graph:ClientSecret` de
+*Secret ID* was opgeslagen in plaats van het secret zelf. Dat is hersteld met een nieuw
+secret; het oude is verwijderd. Er is daarbij geen echt geheim uitgelekt: de Secret ID is
+geen geheim.
+
+## 9. Een app-rol, en een Matrixbeheerder zonder beheerdersrol
+
+**Context**
+Alleen wie de autorisatiematrix beheert, mag de app gebruiken. Ik zocht eerst een eigen
+rol onder *Roles and administrators* in Entra, maar die vraagt om Entra ID P1 of P2.
+
+**Opties**
+- *Een Entra-rol (custom role).* Bepaalt wat iemand in Entra zelf mag, afgedwongen door
+  Microsoft. Vereist P1 of P2, en past niet bij de vraag: het gaat om toegang tot mijn
+  app, niet tot Entra.
+- *Een app-rol op de app-registratie.* Een label dat Entra bij het inloggen in het token
+  zet. De app bepaalt zelf wat het label betekent. Gratis.
+
+**Keuze**
+De app-rol `Matrixbeheerder`. Die heb ik toegewezen aan een aparte testgebruiker op de
+afdeling ICT, **zonder** beheerdersrol in Entra. De app wijzigt groepen met zijn eigen
+rechten (application permissions), dus de Matrixbeheerder hoeft zelf geen beheerder van
+de tenant te zijn. In de app is de rol de regel voor elke pagina: wie hem niet heeft, komt
+nergens in.
+
+**Gevolgen**
+De app moet de rol zelf controleren; Entra weet niet wat Matrixbeheerder mag. De waarde
+van de rol moet in de code precies hetzelfde gespeld zijn als in de portal. En omdat de
+app met zijn eigen rechten bij elke gewone beveiligingsgroep in de tenant kan, moet de app
+ook zelf bewaken dat hij alleen aan de AUTH-groepen komt.
