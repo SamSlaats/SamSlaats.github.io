@@ -12,16 +12,36 @@ Het sjabloon staat in `sjablonen/beslissing.md`.
 ## 1. Access ports in plaats van VLAN-tagging op de host
 
 **Context**
-<!-- Welk probleem moest je oplossen? -->
+Elke machine in het lab moet in het juiste VLAN terechtkomen. Dat kan op twee plekken
+geregeld worden: op de machine zelf, die zijn verkeer tagt, of op een switch, die per poort
+bepaalt in welk VLAN een machine zit.
 
 **Opties**
-<!-- Wat heb je overwogen, en wat zijn de voor- en nadelen per optie? -->
+- *VLAN-tagging op de host.* Elke VM tagt zelf zijn verkeer. Geen switch nodig, en dit heb
+  ik al eens gedaan (schoolproject Medica+). Maar elke machine bepaalt dan zelf in welk VLAN
+  hij zit: een overgenomen of verkeerd ingestelde machine kan verkeer in een ander VLAN
+  sturen.
+- *Een managed switch met access-poorten.* De switch bepaalt per poort het VLAN; een
+  machine op een access-poort weet niets van VLAN's en kan zichzelf niet in een ander VLAN
+  zetten. Alleen tussen netwerkapparaten wordt getagd (de trunk tussen switch en OPNsense).
 
 **Keuze**
-<!-- Wat heb je gekozen en waarom? -->
+Een managed switch (Arista vEOS) met access-poorten. De eerste reden is een leerdoel:
+VLAN-tagging kende ik al, met een managed switch had ik nog nooit gewerkt, en ik wilde een
+casus waarin dat nodig is. De tweede reden is technisch: met access-poorten hangt de
+segmentatie (eis 1) af van één plek die ik beheer, de switch, en niet van elke machine
+afzonderlijk. Zo is het in echte netwerken ook: eindapparaten op access-poorten, tagging
+alleen tussen netwerkapparaten.
 
 **Gevolgen**
-<!-- Wat kost deze keuze (RAM, complexiteit) en wat levert hij op? -->
+- Per VLAN een eigen poort op de switch en een eigen netwerkkaart op de switch-VM. Voor
+  VLAN 40 moest daarvoor een zesde kaart bij (Ethernet5).
+- De volgorde van de netwerkkaarten in VMware moet kloppen met de poorten van de switch. Dat
+  ging mis: bij storing 3 doordat de eerste kaart (Management1) niet was meegeteld en alles
+  één opschoof, bij storing 8 door een kaart aan het verkeerde segment. Sindsdien staat er
+  een tabel met kaart, MAC-adres, poort en segment in de bouwlog, en wordt na elke wijziging
+  de hele tabel gecontroleerd.
+- Een switch-VM kost 2 GB geheugen extra.
 
 ## 2. Native VLAN op de trunk naar een ongebruikt VLAN, ongebruikte poorten dicht
 
