@@ -50,7 +50,7 @@ straks moet vinden: zo weet ik van tevoren wat de uitkomst van de vergelijking h
 
 | Fase | Inhoud | Stand |
 |---|---|---|
-| M0 Fundament | Ontwikkelomgeving, opbouw van de code, CI, testtenant, inloggen met app-rol | Afgerond |
+| M0 Fundament | Ontwikkelomgeving, opbouw van de code, CI, testtenant, inloggen met app-rol | Afgerond, zie de [bouwlog](/autorisatiematrix/bouwlog-m0-fundament/) |
 | M1 Domein en opslag | Het model en de berekening van rechten, test-first; database en auditlog | Gepland |
 | M2 Entra lezen | De werkelijke groepsleden ophalen via Microsoft Graph | Gepland |
 | M3 Matrix | De matrix bekijken en bewerken, rollen toewijzen | Gepland |

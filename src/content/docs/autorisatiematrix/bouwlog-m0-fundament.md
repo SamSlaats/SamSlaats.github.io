@@ -1,7 +1,6 @@
 ---
 title: 'Bouwlog M0: fundament'
 description: Ontwikkelomgeving, opbouw van de code, CI, testtenant en inloggen met een app-rol.
-draft: true
 sidebar:
   order: 5.0
 ---
