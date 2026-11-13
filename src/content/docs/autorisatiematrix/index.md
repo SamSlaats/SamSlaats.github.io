@@ -18,7 +18,7 @@ kant van de code begrijpen.
 
 | | |
 |---|---|
-| **Status** | In ontwikkeling: fase M0 (fundament) bijna af |
+| **Status** | In ontwikkeling: fase M0 (fundament) af, M1 is de volgende |
 | **Platform** | ASP.NET Core met Blazor Server, .NET 10, in WSL2 |
 | **Koppelingen** | Microsoft Entra ID via Microsoft Graph; later on-prem Active Directory in het lab |
 | **Herkomst** | Eigen leerproject |
@@ -50,7 +50,7 @@ straks moet vinden: zo weet ik van tevoren wat de uitkomst van de vergelijking h
 
 | Fase | Inhoud | Stand |
 |---|---|---|
-| M0 Fundament | Ontwikkelomgeving, opbouw van de code, CI, testtenant, inloggen met app-rol | Bijna af: inloggen in uitvoering |
+| M0 Fundament | Ontwikkelomgeving, opbouw van de code, CI, testtenant, inloggen met app-rol | Afgerond |
 | M1 Domein en opslag | Het model en de berekening van rechten, test-first; database en auditlog | Gepland |
 | M2 Entra lezen | De werkelijke groepsleden ophalen via Microsoft Graph | Gepland |
 | M3 Matrix | De matrix bekijken en bewerken, rollen toewijzen | Gepland |

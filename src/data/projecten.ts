@@ -85,7 +85,7 @@ export const projecten: Project[] = [
     samenvatting:
       'Een webapp die vastlegt welke functie welke rechten krijgt, dat vergelijkt met de groepen in Entra ID en de verschillen pas na goedkeuring doorvoert. Later ook on-prem AD in het lab.',
     cijfers: [
-      { waarde: 'M0', label: 'huidige fase' },
+      { waarde: 'M1', label: 'volgende fase' },
       { waarde: '6', label: 'AUTH-groepen' },
       { waarde: '8', label: 'testgebruikers' },
     ],
