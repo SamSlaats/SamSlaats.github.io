@@ -253,3 +253,45 @@ De app moet de rol zelf controleren; Entra weet niet wat Matrixbeheerder mag. De
 van de rol moet in de code precies hetzelfde gespeld zijn als in de portal. En omdat de
 app met zijn eigen rechten bij elke gewone beveiligingsgroep in de tenant kan, moet de app
 ook zelf bewaken dat hij alleen aan de AUTH-groepen komt.
+
+## 10. Uitzonderingen verdwijnen niet met de medewerker
+
+**Context**
+Een uitzondering hoort bij precies één medewerker. In de database moet vastliggen wat er
+met die uitzonderingen gebeurt als de medewerker wordt verwijderd.
+
+**Opties**
+- *Cascade.* De uitzonderingen worden automatisch meeverwijderd. Handig bij opruimen,
+  maar het bewijs van een afwijking op de matrix verdwijnt stilletjes.
+- *Restrict.* De database weigert een medewerker te verwijderen zolang er nog
+  uitzonderingen aan hangen.
+
+**Keuze**
+Restrict. Bij een audit moet je ook bij iemand die uit dienst is kunnen zien welke
+uitzonderingen hij had.
+
+**Gevolgen**
+Een medewerker met uitzonderingen kan niet zomaar weg; daar moet een bewuste stap voor
+komen. Wie uit dienst gaat, wordt in de praktijk niet verwijderd maar gemarkeerd. De
+koppelingen tussen medewerkers en rollen staan wél op Cascade: een losse koppeling zonder
+medewerker of rol betekent niets meer. Dat betekent ook dat het verwijderen van een rol
+iedereen die rol laat verliezen. Het vastleggen van wie wanneer welke rol had, hoort bij
+het auditlog.
+
+## 11. Veldlengtes en kolomnamen
+
+**Context**
+Voor de reden en de eigenaar van een uitzondering moest een maximale lengte gekozen
+worden. EF Core noemde de rolkolom in de koppeltabel uit zichzelf `RollenId`.
+
+**Keuze**
+De reden mag 256 tekens zijn: ruim genoeg voor een zin met een ticketnummer, te kort voor
+een verhaal. De eigenaar mag 100 tekens zijn, net als de naam van een rol. De kolom in de
+koppeltabel heet `RolId`, zodat hetzelfde begrip overal hetzelfde heet.
+
+**Gevolgen**
+SQLite controleert de lengte niet; die gaat pas tellen bij een database als SQL Server.
+Wil ik de lengte nu al afdwingen, dan hoort die controle ook in het domein. Het hernoemen
+van de kolom kon nog door de migratie weg te gooien en opnieuw te maken, omdat die nog
+niet gedeeld was. Een migratie die op `main` staat, herschrijf ik niet meer: dan komt er
+een nieuwe bovenop.
